@@ -1,10 +1,10 @@
 import { Effect, Layer } from 'effect';
 import { encodeFunctionData } from 'viem';
-import { BlockchainService } from '../../application/ports/blockchain-port.js';
+import { InstantPaymentEncoderService } from '../../application/ports/instant-payment-encoder-port.js';
 import type { Hex } from '../../domain/types/eth.js';
 import { bullaInstantPaymentAbi } from '../abi/bulla-instant-payment.js';
 
-export const ViemBlockchainServiceLive = Layer.succeed(BlockchainService, {
+export const ViemInstantPaymentEncoderLive = Layer.succeed(InstantPaymentEncoderService, {
     encodeInstantPayment: params =>
         Effect.try({
             try: () =>

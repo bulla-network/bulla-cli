@@ -110,19 +110,6 @@ yarn build
 yarn format
 ```
 
-## Architecture
-
-Onion architecture with four layers:
-
-```
-Domain (pure types, validation, errors)
-  └─ Application (use-case services + port interfaces)
-       └─ Infrastructure (viem adapters, registry, signer)
-            └─ CLI (commands, options, formatters)
-```
-
-The build/execute split is enforced at the type level — `buildInstantPayment` requires only `RegistryService + BlockchainService`, while `sendInstantPayment` adds `SignerService` to the Effect requirements.
-
 ## License
 
 [MIT](LICENSE)

@@ -1,7 +1,7 @@
 import { Context, Effect } from 'effect';
 import type { Hex } from '../../domain/types/eth.js';
 
-export interface BlockchainService {
+export interface InstantPaymentEncoderService {
     /** Encode calldata for the instantPayment function. Pure computation, no I/O. */
     readonly encodeInstantPayment: (params: {
         readonly to: string;
@@ -13,4 +13,5 @@ export interface BlockchainService {
     }) => Effect.Effect<Hex>;
 }
 
-export const BlockchainService = Context.GenericTag<BlockchainService>('BlockchainService');
+export const InstantPaymentEncoderService =
+    Context.GenericTag<InstantPaymentEncoderService>('InstantPaymentEncoderService');

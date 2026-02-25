@@ -4,21 +4,21 @@ import type { InstantPaymentParams } from '../../domain/types/instant-payment.js
 import { isNativeToken } from '../../domain/types/token.js';
 import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
 import { formatTags } from '../../domain/validation/instant-payment.js';
-import { BlockchainService } from '../ports/blockchain-port.js';
+import { InstantPaymentEncoderService } from '../ports/instant-payment-encoder-port.js';
 import { RegistryService } from '../ports/registry-port.js';
 import { SignerService } from '../ports/signer-port.js';
 
 /**
  * Build mode: produces the unsigned transaction payload.
  * Does NOT require a signer. Does NOT require blockchain I/O.
- * Only needs: RegistryService (to look up contract address) and BlockchainService (for ABI encoding).
+ * Only needs: RegistryService (to look up contract address) and InstantPaymentEncoderService (for ABI encoding).
  */
 export const buildInstantPayment = (
     params: InstantPaymentParams,
-): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | BlockchainService> =>
+): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | InstantPaymentEncoderService> =>
     Effect.gen(function* () {
         const registry = yield* RegistryService;
-        const blockchain = yield* BlockchainService;
+        const blockchain = yield* InstantPaymentEncoderService;
 
         const contractAddress = yield* registry.getInstantPaymentAddress(params.chainId);
 
@@ -52,7 +52,7 @@ export const sendInstantPayment = (
 ): Effect.Effect<
     TransactionResult,
     ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | BlockchainService | SignerService
+    RegistryService | InstantPaymentEncoderService | SignerService
 > =>
     Effect.gen(function* () {
         const signer = yield* SignerService;

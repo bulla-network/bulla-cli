@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { encodeFunctionData } from 'viem';
 import { buildInstantPayment, sendInstantPayment } from '../../../src/application/services/instant-payment-service.js';
 import { RegistryService } from '../../../src/application/ports/registry-port.js';
-import { BlockchainService } from '../../../src/application/ports/blockchain-port.js';
+import { InstantPaymentEncoderService } from '../../../src/application/ports/instant-payment-encoder-port.js';
 import { SignerService } from '../../../src/application/ports/signer-port.js';
 import { SignerRequiredError } from '../../../src/domain/errors.js';
 import { bullaInstantPaymentAbi } from '../../../src/infrastructure/abi/bulla-instant-payment.js';
@@ -32,7 +32,7 @@ const TestRegistryService = Layer.succeed(RegistryService, {
 });
 
 /** Uses real viem encoding for golden-value tests. */
-const RealEncodingBlockchainService = Layer.succeed(BlockchainService, {
+const TestInstantPaymentEncoder = Layer.succeed(InstantPaymentEncoderService, {
     encodeInstantPayment: params =>
         Effect.succeed(
             encodeFunctionData({
@@ -60,9 +60,9 @@ const FailingSignerService = Layer.succeed(SignerService, {
     signAndSend: () => Effect.fail(new SignerRequiredError({ message: 'No signer configured' })),
 });
 
-const BuildTestLayers = Layer.mergeAll(TestRegistryService, RealEncodingBlockchainService);
-const ExecuteTestLayers = Layer.mergeAll(TestRegistryService, RealEncodingBlockchainService, TestSignerService);
-const FailingExecuteTestLayers = Layer.mergeAll(TestRegistryService, RealEncodingBlockchainService, FailingSignerService);
+const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder);
+const ExecuteTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder, TestSignerService);
+const FailingExecuteTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder, FailingSignerService);
 
 // --- Tests ---
 
