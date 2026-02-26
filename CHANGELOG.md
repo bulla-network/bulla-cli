@@ -1,3 +1,10 @@
+## [0.0.2](https://github.com/bulla-network/bulla-cli/compare/v0.0.1...v0.0.2) (2026-02-26)
+
+
+### Bug Fixes
+
+* re-trigger release after npm cooldown workaround ([148cd6a](https://github.com/bulla-network/bulla-cli/commit/148cd6ac4cb4d9f28af200aea6148e05ba0b17cd))
+
 ## [0.0.1](https://github.com/bulla-network/bulla-cli/compare/v0.0.0...v0.0.1) (2026-02-26)
 
 
