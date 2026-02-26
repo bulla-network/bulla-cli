@@ -6,6 +6,7 @@ export interface RegistryService {
     readonly getInstantPaymentAddress: (
         chainId: ChainId,
     ) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
+    readonly getInvoiceAddress: (chainId: ChainId) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
 }
 
 export const RegistryService = Context.GenericTag<RegistryService>('RegistryService');
