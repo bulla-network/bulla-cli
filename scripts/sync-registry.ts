@@ -12,8 +12,8 @@
  *   2. Environment variable: BULLA_REGISTRY_PATH
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SUPPORTED_CHAIN_IDS } from '../src/domain/types/eth.js';
 
@@ -82,12 +82,13 @@ function main() {
         const bullaContractsV2 = network.contracts['bulla-contracts-v2'];
         const invoiceAddr = bullaContractsV2?.['bullaInvoice'];
 
-        if (!instantPaymentAddr || !invoiceAddr) {
-            console.warn(`  Warning: Missing contracts for chain ${chainId} (${network.name})`);
+        if (!instantPaymentAddr) {
+            console.warn(`  Warning: Missing bullaInstantPayment for chain ${chainId} (${network.name}), skipping`);
             continue;
         }
 
-        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress, bullaInvoice: '${invoiceAddr}' as EthAddress },`);
+        const invoicePart = invoiceAddr ? `, bullaInvoice: '${invoiceAddr}' as EthAddress` : '';
+        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress${invoicePart} },`);
         subgraphs.push(`    ${chainId}: '${network.graphql}',`);
         chainNames.push(`    ${chainId}: '${network.name}',`);
     }
@@ -100,14 +101,14 @@ import type { EthAddress, ChainId } from '../domain/types/eth.js';
 
 export interface ChainContracts {
     readonly bullaInstantPayment: EthAddress;
-    readonly bullaInvoice: EthAddress;
+    readonly bullaInvoice?: EthAddress;
 }
 
 export const REGISTRY: Record<ChainId, ChainContracts> = {
 ${contracts.join('\n')}
 };
 
-export const SUBGRAPH_ENDPOINTS: Partial<Record<ChainId, string>> = {
+export const SUBGRAPH_ENDPOINTS: Record<ChainId, string> = {
 ${subgraphs.join('\n')}
 };
 
