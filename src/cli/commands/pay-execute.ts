@@ -11,7 +11,7 @@ import {
     privateKeyOption,
 } from '../options/pay-options.js';
 import { sendInstantPayment } from '../../application/services/instant-payment-service.js';
-import { makePrivateKeySignerService } from '../../infrastructure/signer/private-key-signer-service.js';
+import { makeSignerLayer } from '../../infrastructure/layers.js';
 import { formatResult, type OutputFormat } from '../formatters/index.js';
 import { isChainId, type ChainId, type EthAddress, type Hex } from '../../domain/types/eth.js';
 import { validateAddress, validateAmount } from '../../domain/validation/eth.js';
@@ -70,7 +70,7 @@ export const payExecuteCommand = Command.make(
             };
 
             const resolvedRpcUrl = Option.getOrUndefined(rpcUrl);
-            const signerLayer = makePrivateKeySignerService(privateKey as Hex, resolvedRpcUrl);
+            const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendInstantPayment(params).pipe(Effect.provide(signerLayer));
 

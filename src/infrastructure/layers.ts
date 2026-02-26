@@ -7,6 +7,5 @@ import type { Hex } from '../domain/types/eth.js';
 /** Layer for "build" mode: no signer needed. */
 export const BuildModeLayers = Layer.mergeAll(StaticRegistryServiceLive, ViemInstantPaymentEncoderLive);
 
-/** Layer for "execute" mode: requires a private key. */
-export const makeExecuteModeLayers = (privateKey: Hex, rpcUrl?: string) =>
-    Layer.mergeAll(StaticRegistryServiceLive, ViemInstantPaymentEncoderLive, makePrivateKeySignerService(privateKey, rpcUrl));
+/** Additive signer layer for execute mode: requires a private key. */
+export const makeSignerLayer = (privateKey: Hex, rpcUrl?: string) => makePrivateKeySignerService(privateKey, rpcUrl);
