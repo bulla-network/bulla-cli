@@ -7,7 +7,7 @@ import { formatResult, type OutputFormat } from '../formatters/index.js';
 import { chainOption, formatOption, rpcUrlOption } from '../options/common.js';
 import { claimIdOption, depositAmountOption } from '../options/invoice-options.js';
 import { privateKeyOption } from '../options/pay-options.js';
-import { makeExecuteModeLayers } from '../../infrastructure/layers.js';
+import { makeSignerLayer } from '../../infrastructure/layers.js';
 
 export const invoiceAcceptPoExecuteCommand = Command.make(
     'execute',
@@ -40,9 +40,9 @@ export const invoiceAcceptPoExecuteCommand = Command.make(
             };
 
             const resolvedRpcUrl = Option.getOrUndefined(rpcUrl);
-            const executeLayer = makeExecuteModeLayers(privateKey as Hex, resolvedRpcUrl);
+            const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
-            const result = yield* sendAcceptPurchaseOrder(params).pipe(Effect.provide(executeLayer));
+            const result = yield* sendAcceptPurchaseOrder(params).pipe(Effect.provide(signerLayer));
 
             const output = formatResult(result, format as OutputFormat);
             yield* Console.log(output);
