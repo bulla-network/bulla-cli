@@ -22,3 +22,15 @@ export const validateAmount = (input: string): Either.Either<bigint, InvalidAmou
         return Either.left(new InvalidAmountError({ amount: input, message: `Invalid amount: ${input}` }));
     }
 };
+
+export const validateAmountOrZero = (input: string): Either.Either<bigint, InvalidAmountError> => {
+    try {
+        const val = BigInt(input);
+        if (val < 0n) {
+            return Either.left(new InvalidAmountError({ amount: input, message: 'Amount must be non-negative' }));
+        }
+        return Either.right(val);
+    } catch {
+        return Either.left(new InvalidAmountError({ amount: input, message: `Invalid amount: ${input}` }));
+    }
+};

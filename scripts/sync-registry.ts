@@ -78,12 +78,16 @@ function main() {
         const bullaContracts = network.contracts['bulla-contracts'];
         const instantPaymentAddr = bullaContracts?.['bullaInstantPayment'];
 
-        if (!instantPaymentAddr) {
-            console.warn(`  Warning: No bullaInstantPayment for chain ${chainId} (${network.name})`);
+        // Extract bullaInvoice address from bulla-contracts-v2 group
+        const bullaContractsV2 = network.contracts['bulla-contracts-v2'];
+        const invoiceAddr = bullaContractsV2?.['bullaInvoice'];
+
+        if (!instantPaymentAddr || !invoiceAddr) {
+            console.warn(`  Warning: Missing contracts for chain ${chainId} (${network.name})`);
             continue;
         }
 
-        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress },`);
+        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress, bullaInvoice: '${invoiceAddr}' as EthAddress },`);
         subgraphs.push(`    ${chainId}: '${network.graphql}',`);
         chainNames.push(`    ${chainId}: '${network.name}',`);
     }
@@ -96,6 +100,7 @@ import type { EthAddress, ChainId } from '../domain/types/eth.js';
 
 export interface ChainContracts {
     readonly bullaInstantPayment: EthAddress;
+    readonly bullaInvoice: EthAddress;
 }
 
 export const REGISTRY: Record<ChainId, ChainContracts> = {

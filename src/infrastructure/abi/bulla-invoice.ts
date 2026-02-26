@@ -1,0 +1,212 @@
+/** BullaInvoice ABI — declared `as const` for viem type inference. */
+export const bullaInvoiceAbi = [
+    {
+        inputs: [
+            {
+                components: [
+                    { internalType: 'address', name: 'debtor', type: 'address' },
+                    { internalType: 'address', name: 'creditor', type: 'address' },
+                    { internalType: 'uint256', name: 'claimAmount', type: 'uint256' },
+                    { internalType: 'uint256', name: 'dueBy', type: 'uint256' },
+                    { internalType: 'uint256', name: 'deliveryDate', type: 'uint256' },
+                    { internalType: 'string', name: 'description', type: 'string' },
+                    { internalType: 'address', name: 'token', type: 'address' },
+                    { internalType: 'enum ClaimBinding', name: 'binding', type: 'uint8' },
+                    {
+                        components: [
+                            { internalType: 'uint16', name: 'interestRateBps', type: 'uint16' },
+                            { internalType: 'uint16', name: 'numberOfPeriodsPerYear', type: 'uint16' },
+                        ],
+                        internalType: 'struct InterestConfig',
+                        name: 'lateFeeConfig',
+                        type: 'tuple',
+                    },
+                    { internalType: 'uint256', name: 'impairmentGracePeriod', type: 'uint256' },
+                    { internalType: 'uint256', name: 'depositAmount', type: 'uint256' },
+                ],
+                internalType: 'struct CreateInvoiceParams',
+                name: 'params',
+                type: 'tuple',
+            },
+        ],
+        name: 'createInvoice',
+        outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { internalType: 'address', name: 'debtor', type: 'address' },
+                    { internalType: 'address', name: 'creditor', type: 'address' },
+                    { internalType: 'uint256', name: 'claimAmount', type: 'uint256' },
+                    { internalType: 'uint256', name: 'dueBy', type: 'uint256' },
+                    { internalType: 'uint256', name: 'deliveryDate', type: 'uint256' },
+                    { internalType: 'string', name: 'description', type: 'string' },
+                    { internalType: 'address', name: 'token', type: 'address' },
+                    { internalType: 'enum ClaimBinding', name: 'binding', type: 'uint8' },
+                    {
+                        components: [
+                            { internalType: 'uint16', name: 'interestRateBps', type: 'uint16' },
+                            { internalType: 'uint16', name: 'numberOfPeriodsPerYear', type: 'uint16' },
+                        ],
+                        internalType: 'struct InterestConfig',
+                        name: 'lateFeeConfig',
+                        type: 'tuple',
+                    },
+                    { internalType: 'uint256', name: 'impairmentGracePeriod', type: 'uint256' },
+                    { internalType: 'uint256', name: 'depositAmount', type: 'uint256' },
+                ],
+                internalType: 'struct CreateInvoiceParams',
+                name: 'params',
+                type: 'tuple',
+            },
+            {
+                components: [
+                    { internalType: 'string', name: 'tokenURI', type: 'string' },
+                    { internalType: 'string', name: 'attachmentURI', type: 'string' },
+                ],
+                internalType: 'struct ClaimMetadata',
+                name: 'metadata',
+                type: 'tuple',
+            },
+        ],
+        name: 'createInvoiceWithMetadata',
+        outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { internalType: 'uint256', name: 'claimId', type: 'uint256' },
+            { internalType: 'uint256', name: 'paymentAmount', type: 'uint256' },
+        ],
+        name: 'payInvoice',
+        outputs: [],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { internalType: 'uint256', name: 'claimId', type: 'uint256' },
+            { internalType: 'string', name: 'note', type: 'string' },
+        ],
+        name: 'cancelInvoice',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [{ internalType: 'uint256', name: 'claimId', type: 'uint256' }],
+        name: 'impairInvoice',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [{ internalType: 'uint256', name: 'claimId', type: 'uint256' }],
+        name: 'markInvoiceAsPaid',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { internalType: 'uint256', name: 'claimId', type: 'uint256' },
+            { internalType: 'enum ClaimBinding', name: 'binding', type: 'uint8' },
+        ],
+        name: 'updateBinding',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [{ internalType: 'uint256', name: 'claimId', type: 'uint256' }],
+        name: 'deliverPurchaseOrder',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { internalType: 'uint256', name: 'claimId', type: 'uint256' },
+            { internalType: 'uint256', name: 'depositAmount', type: 'uint256' },
+        ],
+        name: 'acceptPurchaseOrder',
+        outputs: [],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { internalType: 'uint256', name: 'invoiceId', type: 'uint256' },
+            { internalType: 'address', name: 'callbackContract', type: 'address' },
+            { internalType: 'bytes4', name: 'callbackSelector', type: 'bytes4' },
+        ],
+        name: 'setPaidInvoiceCallback',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [{ internalType: 'uint256', name: 'claimId', type: 'uint256' }],
+        name: 'getInvoice',
+        outputs: [
+            {
+                components: [
+                    { internalType: 'uint256', name: 'claimAmount', type: 'uint256' },
+                    { internalType: 'uint256', name: 'paidAmount', type: 'uint256' },
+                    { internalType: 'uint256', name: 'dueBy', type: 'uint256' },
+                    { internalType: 'address', name: 'creditor', type: 'address' },
+                    { internalType: 'address', name: 'debtor', type: 'address' },
+                    { internalType: 'address', name: 'token', type: 'address' },
+                    { internalType: 'enum Status', name: 'status', type: 'uint8' },
+                    { internalType: 'enum ClaimBinding', name: 'binding', type: 'uint8' },
+                    {
+                        components: [
+                            { internalType: 'uint256', name: 'deliveryDate', type: 'uint256' },
+                            { internalType: 'uint256', name: 'depositAmount', type: 'uint256' },
+                            { internalType: 'bool', name: 'isDelivered', type: 'bool' },
+                        ],
+                        internalType: 'struct PurchaseOrderState',
+                        name: 'purchaseOrder',
+                        type: 'tuple',
+                    },
+                    {
+                        components: [
+                            { internalType: 'uint16', name: 'interestRateBps', type: 'uint16' },
+                            { internalType: 'uint16', name: 'numberOfPeriodsPerYear', type: 'uint16' },
+                        ],
+                        internalType: 'struct InterestConfig',
+                        name: 'lateFeeConfig',
+                        type: 'tuple',
+                    },
+                    {
+                        components: [
+                            { internalType: 'uint256', name: 'accruedInterest', type: 'uint256' },
+                            { internalType: 'uint256', name: 'latestPeriodNumber', type: 'uint256' },
+                            { internalType: 'uint16', name: 'protocolFeeBps', type: 'uint16' },
+                            { internalType: 'uint256', name: 'totalGrossInterestPaid', type: 'uint256' },
+                        ],
+                        internalType: 'struct InterestComputationState',
+                        name: 'interestComputationState',
+                        type: 'tuple',
+                    },
+                ],
+                internalType: 'struct Invoice',
+                name: '',
+                type: 'tuple',
+            },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ internalType: 'uint256', name: 'claimId', type: 'uint256' }],
+        name: 'getTotalAmountNeededForPurchaseOrderDeposit',
+        outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+] as const;
