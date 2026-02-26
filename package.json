@@ -19,7 +19,7 @@
     },
     "scripts": {
         "dev": "tsx src/index.ts",
-        "build": "tsup",
+        "build": "tsc --noEmit && tsup",
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",

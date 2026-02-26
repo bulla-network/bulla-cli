@@ -19,9 +19,9 @@ const cli = Command.run(bullaCommand, {
     version,
 });
 
-const program = cli(process.argv).pipe(
-    Effect.catchAll((err: { message: string }) => Console.error(err.message)),
+const program = (cli(process.argv) as unknown as Effect.Effect<void, { message: string }>).pipe(
+    Effect.catchAll(err => Console.error(err.message)),
     Effect.provide(Layer.merge(BuildModeLayers, NodeContext.layer)),
-) as Effect.Effect<void>;
+);
 
 NodeRuntime.runMain(program);

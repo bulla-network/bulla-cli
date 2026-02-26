@@ -545,4 +545,4 @@ export const invoiceCommands = [
     invoiceSetCallbackCommand,
     invoiceAcceptPoCommand,
     invoiceDeliverPoCommand,
-];
+] as const;

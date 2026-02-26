@@ -39,8 +39,8 @@ export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
             );
         }
 
-        const chain = REGISTRY[chainId];
-        if (!chain) {
+        const address = REGISTRY[chainId]?.bullaInvoice;
+        if (!address) {
             return Effect.fail(
                 new ContractNotFoundError({
                     chainId,
@@ -50,6 +50,6 @@ export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
             );
         }
 
-        return Effect.succeed(chain.bullaInvoice);
+        return Effect.succeed(address);
     },
 });
