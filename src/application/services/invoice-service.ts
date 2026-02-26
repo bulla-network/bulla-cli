@@ -1,24 +1,24 @@
 import { Effect } from 'effect';
-import type { ContractNotFoundError, SignerRequiredError, TransactionFailedError, UnsupportedChainError } from '../../domain/errors.js';
+import type { ContractNotFoundError, InvoiceNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
 import type {
-    CreateInvoiceParams,
-    ClaimMetadata,
-    PayInvoiceParams,
-    UpdateBindingParams,
-    CancelInvoiceParams,
-    InvoiceOperationParams,
     AcceptPurchaseOrderParams,
+    CancelInvoiceParams,
+    CreateInvoiceParams,
+    InvoiceOperationParams,
+    PayInvoiceParams,
     SetCallbackParams,
+    UpdateBindingParams,
 } from '../../domain/types/invoice.js';
-import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
 import { isNativeToken } from '../../domain/types/token.js';
+import type { UnsignedTransaction } from '../../domain/types/transaction.js';
 import { InvoiceEncoderService } from '../ports/invoice-encoder-port.js';
+import { InvoiceReaderService } from '../ports/invoice-reader-port.js';
 import { RegistryService } from '../ports/registry-port.js';
-import { SignerService } from '../ports/signer-port.js';
 import { executeTransaction } from './transaction-utils.js';
 
 /**
- * Build mode: produces unsigned transaction for createInvoice
+ * Build mode: produces unsigned transaction for createInvoice.
+ * If params.metadata is provided, uses createInvoiceWithMetadata on-chain.
  */
 export const buildCreateInvoice = (
     params: CreateInvoiceParams,
@@ -29,65 +29,42 @@ export const buildCreateInvoice = (
 
         const contractAddress = yield* registry.getInvoiceAddress(params.chainId);
 
-        const data = yield* encoder.encodeCreateInvoice(params);
+        const data = params.metadata
+            ? yield* encoder.encodeCreateInvoiceWithMetadata(params, params.metadata)
+            : yield* encoder.encodeCreateInvoice(params);
 
         // Invoice creation always has value = '0'
         // Protocol fees are out of scope for now
         // Deposit amounts are token values sent by the debtor to bind the claim, not part of the transaction value
-        const value = '0';
-
         return {
             to: contractAddress,
-            value,
+            value: '0',
             data,
             operation: 0 as const,
         };
     });
 
 /**
- * Build mode: produces unsigned transaction for createInvoiceWithMetadata
- */
-export const buildCreateInvoiceWithMetadata = (
-    params: CreateInvoiceParams,
-    metadata: ClaimMetadata,
-): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | InvoiceEncoderService> =>
-    Effect.gen(function* () {
-        const registry = yield* RegistryService;
-        const encoder = yield* InvoiceEncoderService;
-
-        const contractAddress = yield* registry.getInvoiceAddress(params.chainId);
-
-        const data = yield* encoder.encodeCreateInvoiceWithMetadata(params, metadata);
-
-        // Invoice creation always has value = '0'
-        // Protocol fees are out of scope for now
-        // Deposit amounts are token values sent by the debtor to bind the claim, not part of the transaction value
-        const value = '0';
-
-        return {
-            to: contractAddress,
-            value,
-            data,
-            operation: 0 as const,
-        };
-    });
-
-/**
- * Build mode: produces unsigned transaction for payInvoice
+ * Build mode: produces unsigned transaction for payInvoice.
+ * Reads the invoice on-chain to determine if the token is native or ERC20.
  */
 export const buildPayInvoice = (
     params: PayInvoiceParams,
-    tokenAddress: string, // Need to know if it's native or ERC20
-): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | InvoiceEncoderService> =>
+): Effect.Effect<
+    UnsignedTransaction,
+    ContractNotFoundError | UnsupportedChainError | InvoiceNotFoundError,
+    RegistryService | InvoiceEncoderService | InvoiceReaderService
+> =>
     Effect.gen(function* () {
         const registry = yield* RegistryService;
         const encoder = yield* InvoiceEncoderService;
+        const reader = yield* InvoiceReaderService;
 
         const contractAddress = yield* registry.getInvoiceAddress(params.chainId);
-
+        const invoice = yield* reader.getInvoice(params.chainId, params.claimId);
         const data = yield* encoder.encodePayInvoice(params);
 
-        const value = isNativeToken(tokenAddress) ? params.paymentAmount.toString() : '0';
+        const value = isNativeToken(invoice.token) ? params.paymentAmount.toString() : '0';
 
         return {
             to: contractAddress,
@@ -203,21 +180,30 @@ export const buildDeliverPurchaseOrder = (
     });
 
 /**
- * Build mode: produces unsigned transaction for acceptPurchaseOrder
+ * Build mode: produces unsigned transaction for acceptPurchaseOrder.
+ * Reads the invoice on-chain to determine if the token is native (value = depositAmount) or ERC20 (value = 0).
  */
 export const buildAcceptPurchaseOrder = (
     params: AcceptPurchaseOrderParams,
-): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | InvoiceEncoderService> =>
+): Effect.Effect<
+    UnsignedTransaction,
+    ContractNotFoundError | UnsupportedChainError | InvoiceNotFoundError,
+    RegistryService | InvoiceEncoderService | InvoiceReaderService
+> =>
     Effect.gen(function* () {
         const registry = yield* RegistryService;
         const encoder = yield* InvoiceEncoderService;
+        const reader = yield* InvoiceReaderService;
 
         const contractAddress = yield* registry.getInvoiceAddress(params.chainId);
+        const invoice = yield* reader.getInvoice(params.chainId, params.claimId);
         const data = yield* encoder.encodeAcceptPurchaseOrder(params);
+
+        const value = isNativeToken(invoice.token) ? params.depositAmount.toString() : '0';
 
         return {
             to: contractAddress,
-            value: params.depositAmount.toString(),
+            value,
             data,
             operation: 0 as const,
         };
@@ -245,21 +231,15 @@ export const buildSetPaidInvoiceCallback = (
     });
 
 /**
- * Execute mode: signs and sends createInvoice transaction
+ * Execute mode: signs and sends createInvoice transaction.
+ * If params.metadata is provided, uses createInvoiceWithMetadata on-chain.
  */
 export const sendCreateInvoice = (params: CreateInvoiceParams) => executeTransaction(buildCreateInvoice, params);
 
 /**
- * Execute mode: signs and sends createInvoiceWithMetadata transaction
- */
-export const sendCreateInvoiceWithMetadata = (params: CreateInvoiceParams, metadata: ClaimMetadata) =>
-    executeTransaction((p: CreateInvoiceParams) => buildCreateInvoiceWithMetadata(p, metadata), params);
-
-/**
  * Execute mode: signs and sends payInvoice transaction
  */
-export const sendPayInvoice = (params: PayInvoiceParams, tokenAddress: string) =>
-    executeTransaction((p: PayInvoiceParams) => buildPayInvoice(p, tokenAddress), params);
+export const sendPayInvoice = (params: PayInvoiceParams) => executeTransaction(buildPayInvoice, params);
 
 /**
  * Execute mode: signs and sends cancelInvoice transaction
@@ -284,17 +264,14 @@ export const sendUpdateBinding = (params: UpdateBindingParams) => executeTransac
 /**
  * Execute mode: signs and sends deliverPurchaseOrder transaction
  */
-export const sendDeliverPurchaseOrder = (params: InvoiceOperationParams) =>
-    executeTransaction(buildDeliverPurchaseOrder, params);
+export const sendDeliverPurchaseOrder = (params: InvoiceOperationParams) => executeTransaction(buildDeliverPurchaseOrder, params);
 
 /**
  * Execute mode: signs and sends acceptPurchaseOrder transaction
  */
-export const sendAcceptPurchaseOrder = (params: AcceptPurchaseOrderParams) =>
-    executeTransaction(buildAcceptPurchaseOrder, params);
+export const sendAcceptPurchaseOrder = (params: AcceptPurchaseOrderParams) => executeTransaction(buildAcceptPurchaseOrder, params);
 
 /**
  * Execute mode: signs and sends setPaidInvoiceCallback transaction
  */
-export const sendSetPaidInvoiceCallback = (params: SetCallbackParams) =>
-    executeTransaction(buildSetPaidInvoiceCallback, params);
+export const sendSetPaidInvoiceCallback = (params: SetCallbackParams) => executeTransaction(buildSetPaidInvoiceCallback, params);

@@ -19,10 +19,7 @@ export const deliveryDateOption = Options.integer('delivery-date').pipe(
     Options.withDescription('Delivery date for purchase order as Unix timestamp (0 = no purchase order)'),
 );
 
-export const descriptionOption = Options.text('description').pipe(
-    Options.withDefault(''),
-    Options.withDescription('Invoice description'),
-);
+export const descriptionOption = Options.text('description').pipe(Options.withDefault(''), Options.withDescription('Invoice description'));
 
 export const bindingOption = Options.integer('binding').pipe(
     Options.withDefault(0),
@@ -68,9 +65,7 @@ export const attachmentURIOption = Options.text('attachment-uri').pipe(
 export const noteOption = Options.text('note').pipe(Options.withDefault(''), Options.withDescription('Cancellation note'));
 
 // Callback options
-export const callbackContractOption = Options.text('callback-contract').pipe(
-    Options.withDescription('Address of callback contract'),
-);
+export const callbackContractOption = Options.text('callback-contract').pipe(Options.withDescription('Address of callback contract'));
 
 export const callbackSelectorOption = Options.text('callback-selector').pipe(
     Options.withDescription('Function selector (bytes4) as hex string (e.g., 0x12345678)'),

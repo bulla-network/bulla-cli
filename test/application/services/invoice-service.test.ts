@@ -1,31 +1,34 @@
 import { Effect, Layer } from 'effect';
-import { describe, expect, it } from 'vitest';
 import { encodeFunctionData } from 'viem';
+import { describe, expect, it } from 'vitest';
+import { InvoiceEncoderService } from '../../../src/application/ports/invoice-encoder-port.js';
+import { InvoiceReaderService } from '../../../src/application/ports/invoice-reader-port.js';
+import { RegistryService } from '../../../src/application/ports/registry-port.js';
 import {
-    buildCreateInvoice,
-    buildCreateInvoiceWithMetadata,
-    buildPayInvoice,
+    buildAcceptPurchaseOrder,
     buildCancelInvoice,
+    buildCreateInvoice,
     buildImpairInvoice,
     buildMarkInvoiceAsPaid,
-    buildUpdateBinding,
+    buildPayInvoice,
     buildSetPaidInvoiceCallback,
+    buildUpdateBinding,
 } from '../../../src/application/services/invoice-service.js';
-import { RegistryService } from '../../../src/application/ports/registry-port.js';
-import { InvoiceEncoderService } from '../../../src/application/ports/invoice-encoder-port.js';
-import { bullaInvoiceAbi } from '../../../src/infrastructure/abi/bulla-invoice.js';
-import type { EthAddress, Hex, ChainId } from '../../../src/domain/types/eth.js';
+import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import type {
-    CreateInvoiceParams,
-    ClaimMetadata,
-    PayInvoiceParams,
+    AcceptPurchaseOrderParams,
     CancelInvoiceParams,
-    UpdateBindingParams,
-    SetCallbackParams,
+    ClaimMetadata,
+    CreateInvoiceParams,
+    InvoiceOnChain,
     InvoiceOperationParams,
+    PayInvoiceParams,
+    SetCallbackParams,
+    UpdateBindingParams,
 } from '../../../src/domain/types/invoice.js';
-import { ClaimBinding } from '../../../src/domain/types/invoice.js';
+import { ClaimBinding, InvoiceStatus } from '../../../src/domain/types/invoice.js';
 import { ZERO_ADDRESS } from '../../../src/domain/types/token.js';
+import { bullaInvoiceAbi } from '../../../src/infrastructure/abi/bulla-invoice.js';
 
 const SEPOLIA_INVOICE_CONTRACT = '0xa2c4B7239A0d179A923751cC75277fe139AB092F' as EthAddress;
 const DEBTOR = '0x1234567890abcdef1234567890abcdef12345678' as EthAddress;
@@ -74,7 +77,7 @@ const makeUpdateBindingParams = (overrides: Partial<UpdateBindingParams> = {}): 
 
 const makeSetCallbackParams = (overrides: Partial<SetCallbackParams> = {}): SetCallbackParams => ({
     chainId: 11155111 as ChainId,
-    claimId: 1n,
+    invoiceId: 1n,
     callbackContract: '0x9999999999999999999999999999999999999999' as EthAddress,
     callbackSelector: '0x12345678',
     ...overrides,
@@ -83,6 +86,13 @@ const makeSetCallbackParams = (overrides: Partial<SetCallbackParams> = {}): SetC
 const makeInvoiceOperationParams = (overrides: Partial<InvoiceOperationParams> = {}): InvoiceOperationParams => ({
     chainId: 11155111 as ChainId,
     claimId: 1n,
+    ...overrides,
+});
+
+const makeAcceptPurchaseOrderParams = (overrides: Partial<AcceptPurchaseOrderParams> = {}): AcceptPurchaseOrderParams => ({
+    chainId: 11155111 as ChainId,
+    claimId: 1n,
+    depositAmount: 500n,
     ...overrides,
 });
 
@@ -185,7 +195,7 @@ const TestInvoiceEncoder = Layer.succeed(InvoiceEncoderService, {
             encodeFunctionData({
                 abi: bullaInvoiceAbi,
                 functionName: 'setPaidInvoiceCallback',
-                args: [params.claimId, params.callbackContract as `0x${string}`, params.callbackSelector as `0x${string}`],
+                args: [params.invoiceId, params.callbackContract as `0x${string}`, params.callbackSelector as `0x${string}`],
             }) as Hex,
         ),
     encodeDeliverPurchaseOrder: params =>
@@ -201,10 +211,28 @@ const TestInvoiceEncoder = Layer.succeed(InvoiceEncoderService, {
             encodeFunctionData({
                 abi: bullaInvoiceAbi,
                 functionName: 'acceptPurchaseOrder',
-                args: [params.claimId],
+                args: [params.claimId, params.depositAmount],
             }) as Hex,
         ),
 });
+
+const makeInvoiceOnChain = (token: EthAddress): InvoiceOnChain => ({
+    claimAmount: 1000000000000000000n,
+    paidAmount: 0n,
+    dueBy: 0n,
+    creditor: CREDITOR,
+    debtor: DEBTOR,
+    token,
+    status: InvoiceStatus.Pending,
+    binding: ClaimBinding.Unbound,
+    purchaseOrder: { deliveryDate: 0n, depositAmount: 0n, isDelivered: false },
+    lateFeeConfig: { interestRateBps: 0, numberOfPeriodsPerYear: 0 },
+});
+
+const makeTestReaderService = (token: EthAddress) =>
+    Layer.succeed(InvoiceReaderService, {
+        getInvoice: () => Effect.succeed(makeInvoiceOnChain(token)),
+    });
 
 const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestInvoiceEncoder);
 
@@ -220,7 +248,7 @@ describe('buildCreateInvoice', () => {
     });
 
     it('sets value to "0" for native token invoices (deposit is not part of transaction value)', async () => {
-        const params = makeCreateInvoiceParams({ tokenAddress: ZERO_ADDRESS, claimAmount: 500n });
+        const params = makeCreateInvoiceParams({ token: ZERO_ADDRESS, claimAmount: 500n });
         const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.value).toBe('0');
@@ -274,32 +302,30 @@ describe('buildCreateInvoice', () => {
     });
 });
 
-describe('buildCreateInvoiceWithMetadata', () => {
+describe('buildCreateInvoice with metadata', () => {
     const metadata: ClaimMetadata = {
-        claimMetadataHash: 'QmTest123',
-        claimMetadataUrl: 'https://example.com/metadata',
-        attachmentMetadataHash: 'QmAttachment456',
-        attachmentMetadataUrl: 'https://example.com/attachment',
+        tokenURI: 'https://example.com/metadata',
+        attachmentURI: 'https://example.com/attachment',
     };
 
     it('produces an unsigned transaction with the correct contract address', async () => {
-        const params = makeCreateInvoiceParams();
-        const result = await Effect.runPromise(buildCreateInvoiceWithMetadata(params, metadata).pipe(Effect.provide(BuildTestLayers)));
+        const params = makeCreateInvoiceParams({ metadata });
+        const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.to).toBe(SEPOLIA_INVOICE_CONTRACT);
         expect(result.operation).toBe(0);
     });
 
     it('sets value to "0" for native token invoices with metadata (deposit is not part of transaction value)', async () => {
-        const params = makeCreateInvoiceParams({ token: ZERO_ADDRESS, claimAmount: 1000n, depositAmount: 200n });
-        const result = await Effect.runPromise(buildCreateInvoiceWithMetadata(params, metadata).pipe(Effect.provide(BuildTestLayers)));
+        const params = makeCreateInvoiceParams({ token: ZERO_ADDRESS, claimAmount: 1000n, depositAmount: 200n, metadata });
+        const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the createInvoiceWithMetadata function selector', async () => {
-        const params = makeCreateInvoiceParams();
-        const result = await Effect.runPromise(buildCreateInvoiceWithMetadata(params, metadata).pipe(Effect.provide(BuildTestLayers)));
+        const params = makeCreateInvoiceParams({ metadata });
+        const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
@@ -307,9 +333,12 @@ describe('buildCreateInvoiceWithMetadata', () => {
 });
 
 describe('buildPayInvoice', () => {
+    const nativeTokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ZERO_ADDRESS));
+    const erc20TokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ERC20_TOKEN));
+
     it('produces an unsigned transaction with the correct contract address', async () => {
         const params = makePayInvoiceParams();
-        const result = await Effect.runPromise(buildPayInvoice(params, ZERO_ADDRESS).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildPayInvoice(params).pipe(Effect.provide(nativeTokenLayers)));
 
         expect(result.to).toBe(SEPOLIA_INVOICE_CONTRACT);
         expect(result.operation).toBe(0);
@@ -317,21 +346,21 @@ describe('buildPayInvoice', () => {
 
     it('sets value to payment amount for native token payments', async () => {
         const params = makePayInvoiceParams({ paymentAmount: 500n });
-        const result = await Effect.runPromise(buildPayInvoice(params, ZERO_ADDRESS).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildPayInvoice(params).pipe(Effect.provide(nativeTokenLayers)));
 
         expect(result.value).toBe('500');
     });
 
     it('sets value to "0" for ERC20 payments', async () => {
         const params = makePayInvoiceParams({ paymentAmount: 1000n });
-        const result = await Effect.runPromise(buildPayInvoice(params, ERC20_TOKEN).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildPayInvoice(params).pipe(Effect.provide(erc20TokenLayers)));
 
         expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the payInvoice function selector', async () => {
         const params = makePayInvoiceParams();
-        const result = await Effect.runPromise(buildPayInvoice(params, ZERO_ADDRESS).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildPayInvoice(params).pipe(Effect.provide(nativeTokenLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
@@ -480,6 +509,41 @@ describe('buildSetPaidInvoiceCallback', () => {
     it('encodes calldata starting with the setPaidInvoiceCallback function selector', async () => {
         const params = makeSetCallbackParams();
         const result = await Effect.runPromise(buildSetPaidInvoiceCallback(params).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
+        expect(result.data.length).toBeGreaterThan(10);
+    });
+});
+
+describe('buildAcceptPurchaseOrder', () => {
+    const nativeTokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ZERO_ADDRESS));
+    const erc20TokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ERC20_TOKEN));
+
+    it('produces an unsigned transaction with the correct contract address', async () => {
+        const params = makeAcceptPurchaseOrderParams();
+        const result = await Effect.runPromise(buildAcceptPurchaseOrder(params).pipe(Effect.provide(nativeTokenLayers)));
+
+        expect(result.to).toBe(SEPOLIA_INVOICE_CONTRACT);
+        expect(result.operation).toBe(0);
+    });
+
+    it('sets value to deposit amount for native token invoices', async () => {
+        const params = makeAcceptPurchaseOrderParams({ depositAmount: 500n });
+        const result = await Effect.runPromise(buildAcceptPurchaseOrder(params).pipe(Effect.provide(nativeTokenLayers)));
+
+        expect(result.value).toBe('500');
+    });
+
+    it('sets value to "0" for ERC20 token invoices', async () => {
+        const params = makeAcceptPurchaseOrderParams({ depositAmount: 500n });
+        const result = await Effect.runPromise(buildAcceptPurchaseOrder(params).pipe(Effect.provide(erc20TokenLayers)));
+
+        expect(result.value).toBe('0');
+    });
+
+    it('encodes calldata starting with the acceptPurchaseOrder function selector', async () => {
+        const params = makeAcceptPurchaseOrderParams();
+        const result = await Effect.runPromise(buildAcceptPurchaseOrder(params).pipe(Effect.provide(nativeTokenLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);

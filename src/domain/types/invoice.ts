@@ -1,4 +1,4 @@
-import type { EthAddress, ChainId } from './eth.js';
+import type { ChainId, EthAddress } from './eth.js';
 
 // Enums from Types.sol
 export enum ClaimBinding {
@@ -36,6 +36,7 @@ export interface CreateInvoiceParams {
     lateFeeConfig: InterestConfig;
     impairmentGracePeriod: bigint; // seconds
     depositAmount: bigint; // 0 if no purchase order
+    metadata?: ClaimMetadata;
 }
 
 // ClaimMetadata from Types.sol
@@ -84,4 +85,25 @@ export interface SetCallbackParams {
     invoiceId: bigint;
     callbackContract: EthAddress;
     callbackSelector: string; // bytes4 as hex string
+}
+
+// Purchase order state from on-chain invoice
+export interface PurchaseOrderState {
+    deliveryDate: bigint;
+    depositAmount: bigint;
+    isDelivered: boolean;
+}
+
+// On-chain invoice data returned by getInvoice
+export interface InvoiceOnChain {
+    claimAmount: bigint;
+    paidAmount: bigint;
+    dueBy: bigint;
+    creditor: EthAddress;
+    debtor: EthAddress;
+    token: EthAddress;
+    status: InvoiceStatus;
+    binding: ClaimBinding;
+    purchaseOrder: PurchaseOrderState;
+    lateFeeConfig: InterestConfig;
 }

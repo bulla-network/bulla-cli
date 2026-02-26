@@ -1,9 +1,9 @@
-import { Effect, Console, Either } from 'effect';
-import { validateAddress, validateAmount } from '../../domain/validation/eth.js';
-import { isChainId } from '../../domain/types/eth.js';
+import { Either } from 'effect';
+import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
 import type { InstantPaymentParams } from '../../domain/types/instant-payment.js';
+import { validateAddress, validateAmount, validateChainId } from '../../domain/validation/eth.js';
 
-/** Validate parameters for instant payment */
+/** Validate and parse raw CLI inputs into InstantPaymentParams (pure). */
 export const validateInstantPaymentParams = (
     chain: number,
     to: string,
@@ -12,41 +12,18 @@ export const validateInstantPaymentParams = (
     description: string,
     tags: string,
     ipfsHash: string,
-): Effect.Effect<InstantPaymentParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        const toResult = validateAddress(to);
-        if (Either.isLeft(toResult)) {
-            yield* Console.error(`Invalid recipient address: ${toResult.left.message}`);
-            return undefined;
-        }
-
-        const tokenResult = validateAddress(token);
-        if (Either.isLeft(tokenResult)) {
-            yield* Console.error(`Invalid token address: ${tokenResult.left.message}`);
-            return undefined;
-        }
-
-        const amountResult = validateAmount(amount);
-        if (Either.isLeft(amountResult)) {
-            yield* Console.error(`Invalid amount: ${amountResult.left.message}`);
-            return undefined;
-        }
-
+): Either.Either<InstantPaymentParams, InvalidChainError | InvalidAddressError | InvalidAmountError> =>
+    Either.gen(function* () {
         const tagList = tags
             .split(',')
             .map(t => t.trim())
             .filter(t => t !== '');
 
         return {
-            chainId: chain,
-            to: toResult.right,
-            tokenAddress: tokenResult.right,
-            amount: amountResult.right,
+            chainId: yield* validateChainId(chain),
+            to: yield* validateAddress(to),
+            tokenAddress: yield* validateAddress(token),
+            amount: yield* validateAmount(amount),
             description,
             tags: tagList,
             ipfsHash,

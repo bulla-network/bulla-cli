@@ -1,9 +1,9 @@
 import { Effect } from 'effect';
-import type { ContractNotFoundError, SignerRequiredError, TransactionFailedError, UnsupportedChainError } from '../../domain/errors.js';
+import type { ContractNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
 import type { InstantPaymentParams } from '../../domain/types/instant-payment.js';
+import { formatTags } from '../../domain/types/instant-payment.js';
 import { isNativeToken } from '../../domain/types/token.js';
-import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
-import { formatTags } from '../../domain/validation/instant-payment.js';
+import type { UnsignedTransaction } from '../../domain/types/transaction.js';
 import { InstantPaymentEncoderService } from '../ports/instant-payment-encoder-port.js';
 import { RegistryService } from '../ports/registry-port.js';
 import { executeTransaction } from './transaction-utils.js';

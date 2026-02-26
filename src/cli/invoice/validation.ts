@@ -1,20 +1,41 @@
-import { Effect, Console, Either } from 'effect';
-import { validateAddress, validateAmount, validateAmountOrZero } from '../../domain/validation/eth.js';
-import { isChainId } from '../../domain/types/eth.js';
-import type { ChainId } from '../../domain/types/eth.js';
+import { Either } from 'effect';
+import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
+import { InvalidBindingError, InvalidCallbackSelectorError } from '../../domain/errors.js';
 import type {
-    CreateInvoiceParams,
-    PayInvoiceParams,
-    CancelInvoiceParams,
-    InvoiceOperationParams,
-    UpdateBindingParams,
-    SetCallbackParams,
     AcceptPurchaseOrderParams,
+    CancelInvoiceParams,
     ClaimBinding,
+    CreateInvoiceParams,
+    InvoiceOperationParams,
+    PayInvoiceParams,
+    SetCallbackParams,
+    UpdateBindingParams,
 } from '../../domain/types/invoice.js';
-import type { EthAddress } from '../../domain/types/eth.js';
+import { validateAddress, validateAmount, validateAmountOrZero, validateChainId } from '../../domain/validation/eth.js';
 
-/** Validate parameters for creating an invoice */
+type ValidationError = InvalidChainError | InvalidAddressError | InvalidAmountError | InvalidBindingError | InvalidCallbackSelectorError;
+
+const validateBinding = (binding: number): Either.Either<ClaimBinding, InvalidBindingError> =>
+    binding >= 0 && binding <= 2
+        ? Either.right(binding as ClaimBinding)
+        : Either.left(
+              new InvalidBindingError({
+                  binding,
+                  message: `Invalid binding value: ${binding}. Must be 0 (Unbound), 1 (BindingPending), or 2 (Bound)`,
+              }),
+          );
+
+const validateCallbackSelector = (selector: string): Either.Either<string, InvalidCallbackSelectorError> =>
+    /^0x[0-9a-fA-F]{8}$/.test(selector)
+        ? Either.right(selector)
+        : Either.left(
+              new InvalidCallbackSelectorError({
+                  selector,
+                  message: `Invalid callback selector: ${selector}. Must be a bytes4 hex string (e.g., 0x12345678)`,
+              }),
+          );
+
+/** Validate and parse raw CLI inputs into CreateInvoiceParams (pure). */
 export const validateCreateInvoiceParams = (
     chain: number,
     debtor: string,
@@ -29,253 +50,116 @@ export const validateCreateInvoiceParams = (
     periodsPerYear: number,
     impairmentGracePeriod: number,
     depositAmount: string,
-): Effect.Effect<CreateInvoiceParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        const debtorResult = validateAddress(debtor);
-        if (Either.isLeft(debtorResult)) {
-            yield* Console.error(`Invalid debtor address: ${debtorResult.left.message}`);
-            return undefined;
-        }
-
-        const creditorResult = validateAddress(creditor);
-        if (Either.isLeft(creditorResult)) {
-            yield* Console.error(`Invalid creditor address: ${creditorResult.left.message}`);
-            return undefined;
-        }
-
-        const claimAmountResult = validateAmount(claimAmount);
-        if (Either.isLeft(claimAmountResult)) {
-            yield* Console.error(`Invalid claim amount: ${claimAmountResult.left.message}`);
-            return undefined;
-        }
-
-        const tokenResult = validateAddress(token);
-        if (Either.isLeft(tokenResult)) {
-            yield* Console.error(`Invalid token address: ${tokenResult.left.message}`);
-            return undefined;
-        }
-
-        const depositAmountResult = validateAmountOrZero(depositAmount);
-        if (Either.isLeft(depositAmountResult)) {
-            yield* Console.error(`Invalid deposit amount: ${depositAmountResult.left.message}`);
-            return undefined;
-        }
-
-        // Validate binding enum
-        if (binding < 0 || binding > 2) {
-            yield* Console.error(`Invalid binding value: ${binding}. Must be 0 (Unbound), 1 (BindingPending), or 2 (Bound)`);
-            return undefined;
-        }
-
+): Either.Either<CreateInvoiceParams, ValidationError> =>
+    Either.gen(function* () {
         return {
-            chainId: chain,
-            debtor: debtorResult.right,
-            creditor: creditorResult.right,
-            claimAmount: claimAmountResult.right,
-            token: tokenResult.right,
+            chainId: yield* validateChainId(chain),
+            debtor: yield* validateAddress(debtor),
+            creditor: yield* validateAddress(creditor),
+            claimAmount: yield* validateAmount(claimAmount),
+            token: yield* validateAddress(token),
             dueBy: BigInt(dueBy),
             deliveryDate: BigInt(deliveryDate),
             description,
-            binding: binding as ClaimBinding,
+            binding: yield* validateBinding(binding),
             lateFeeConfig: {
                 interestRateBps,
                 numberOfPeriodsPerYear: periodsPerYear,
             },
             impairmentGracePeriod: BigInt(impairmentGracePeriod),
-            depositAmount: depositAmountResult.right,
+            depositAmount: yield* validateAmountOrZero(depositAmount),
         };
     });
 
-/** Validate parameters for paying an invoice */
+/** Validate and parse raw CLI inputs into PayInvoiceParams (pure). */
 export const validatePayInvoiceParams = (
     chain: number,
     claimId: number,
     paymentAmount: string,
-    token: string,
-): Effect.Effect<{ params: PayInvoiceParams; tokenAddress: EthAddress } | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        const tokenResult = validateAddress(token);
-        if (Either.isLeft(tokenResult)) {
-            yield* Console.error(`Invalid token address: ${tokenResult.left.message}`);
-            return undefined;
-        }
-
-        const amountResult = validateAmount(paymentAmount);
-        if (Either.isLeft(amountResult)) {
-            yield* Console.error(`Invalid payment amount: ${amountResult.left.message}`);
-            return undefined;
-        }
-
+): Either.Either<PayInvoiceParams, ValidationError> =>
+    Either.gen(function* () {
         return {
-            params: {
-                chainId: chain,
-                claimId: BigInt(claimId),
-                paymentAmount: amountResult.right,
-            },
-            tokenAddress: tokenResult.right,
+            chainId: yield* validateChainId(chain),
+            claimId: BigInt(claimId),
+            paymentAmount: yield* validateAmount(paymentAmount),
         };
     });
 
-/** Validate parameters for canceling an invoice */
+/** Validate and parse raw CLI inputs into CancelInvoiceParams (pure). */
 export const validateCancelInvoiceParams = (
     chain: number,
     claimId: number,
     note: string,
-): Effect.Effect<CancelInvoiceParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
+): Either.Either<CancelInvoiceParams, InvalidChainError> =>
+    Either.gen(function* () {
         return {
-            chainId: chain,
+            chainId: yield* validateChainId(chain),
             claimId: BigInt(claimId),
             note: note.trim(),
         };
     });
 
-/** Validate parameters for impairing an invoice */
-export const validateImpairInvoiceParams = (
-    chain: number,
-    claimId: number,
-): Effect.Effect<InvoiceOperationParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        return {
-            chainId: chain,
-            claimId: BigInt(claimId),
-        };
+/** Validate and parse raw CLI inputs into InvoiceOperationParams for impair (pure). */
+export const validateImpairInvoiceParams = (chain: number, claimId: number): Either.Either<InvoiceOperationParams, InvalidChainError> =>
+    Either.gen(function* () {
+        return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });
 
-/** Validate parameters for marking invoice as paid */
-export const validateMarkInvoiceAsPaidParams = (
-    chain: number,
-    claimId: number,
-): Effect.Effect<InvoiceOperationParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        return {
-            chainId: chain,
-            claimId: BigInt(claimId),
-        };
+/** Validate and parse raw CLI inputs into InvoiceOperationParams for mark-paid (pure). */
+export const validateMarkInvoiceAsPaidParams = (chain: number, claimId: number): Either.Either<InvoiceOperationParams, InvalidChainError> =>
+    Either.gen(function* () {
+        return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });
 
-/** Validate parameters for updating binding */
+/** Validate and parse raw CLI inputs into UpdateBindingParams (pure). */
 export const validateUpdateBindingParams = (
     chain: number,
     claimId: number,
     binding: number,
-): Effect.Effect<UpdateBindingParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        // Validate binding enum
-        if (binding < 0 || binding > 2) {
-            yield* Console.error(`Invalid binding value: ${binding}. Must be 0 (Unbound), 1 (BindingPending), or 2 (Bound)`);
-            return undefined;
-        }
-
+): Either.Either<UpdateBindingParams, InvalidChainError | InvalidBindingError> =>
+    Either.gen(function* () {
         return {
-            chainId: chain,
+            chainId: yield* validateChainId(chain),
             claimId: BigInt(claimId),
-            binding: binding as ClaimBinding,
+            binding: yield* validateBinding(binding),
         };
     });
 
-/** Validate parameters for setting paid invoice callback */
+/** Validate and parse raw CLI inputs into SetCallbackParams (pure). */
 export const validateSetPaidInvoiceCallbackParams = (
     chain: number,
-    loanId: number,
+    invoiceId: number,
     callbackContract: string,
     callbackSelector: string,
-): Effect.Effect<SetCallbackParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        const contractResult = validateAddress(callbackContract);
-        if (Either.isLeft(contractResult)) {
-            yield* Console.error(`Invalid callback contract: ${contractResult.left.message}`);
-            return undefined;
-        }
-
-        if (!callbackSelector.startsWith('0x') || callbackSelector.length !== 10) {
-            yield* Console.error(
-                `Invalid callback selector: ${callbackSelector}. Must be a bytes4 hex string (e.g., 0x12345678)`,
-            );
-            return undefined;
-        }
-
+): Either.Either<SetCallbackParams, ValidationError> =>
+    Either.gen(function* () {
         return {
-            chainId: chain,
-            loanId: BigInt(loanId),
-            callbackContract: contractResult.right,
-            callbackSelector,
+            chainId: yield* validateChainId(chain),
+            invoiceId: BigInt(invoiceId),
+            callbackContract: yield* validateAddress(callbackContract),
+            callbackSelector: yield* validateCallbackSelector(callbackSelector),
         };
     });
 
-/** Validate parameters for accepting purchase order */
+/** Validate and parse raw CLI inputs into AcceptPurchaseOrderParams (pure). */
 export const validateAcceptPurchaseOrderParams = (
     chain: number,
     claimId: number,
     depositAmount: string,
-): Effect.Effect<AcceptPurchaseOrderParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        const depositResult = validateAmountOrZero(depositAmount);
-        if (Either.isLeft(depositResult)) {
-            yield* Console.error(`Invalid deposit amount: ${depositResult.left.message}`);
-            return undefined;
-        }
-
+): Either.Either<AcceptPurchaseOrderParams, InvalidChainError | InvalidAmountError> =>
+    Either.gen(function* () {
         return {
-            chainId: chain,
+            chainId: yield* validateChainId(chain),
             claimId: BigInt(claimId),
-            depositAmount: depositResult.right,
+            depositAmount: yield* validateAmountOrZero(depositAmount),
         };
     });
 
-/** Validate parameters for delivering purchase order */
+/** Validate and parse raw CLI inputs into InvoiceOperationParams for deliver-po (pure). */
 export const validateDeliverPurchaseOrderParams = (
     chain: number,
     claimId: number,
-): Effect.Effect<InvoiceOperationParams | undefined, never, never> =>
-    Effect.gen(function* () {
-        if (!isChainId(chain)) {
-            yield* Console.error(`Unsupported chain ID: ${chain}`);
-            return undefined;
-        }
-
-        return {
-            chainId: chain,
-            claimId: BigInt(claimId),
-        };
+): Either.Either<InvoiceOperationParams, InvalidChainError> =>
+    Either.gen(function* () {
+        return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });

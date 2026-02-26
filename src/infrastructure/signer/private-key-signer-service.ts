@@ -4,7 +4,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import * as chains from 'viem/chains';
 import { SignerService } from '../../application/ports/signer-port.js';
 import { SignerRequiredError } from '../../domain/errors.js';
-import type { EthAddress, Hex, ChainId } from '../../domain/types/eth.js';
+import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 
 const chainMap: Partial<Record<ChainId, chains.Chain>> = {
     1: chains.mainnet,

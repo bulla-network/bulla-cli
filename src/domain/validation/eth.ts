@@ -1,6 +1,11 @@
 import { Either } from 'effect';
-import type { EthAddress } from '../types/eth.js';
-import { InvalidAddressError, InvalidAmountError } from '../errors.js';
+import { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../errors.js';
+import { isChainId, type ChainId, type EthAddress } from '../types/eth.js';
+
+export const validateChainId = (chain: number): Either.Either<ChainId, InvalidChainError> =>
+    isChainId(chain)
+        ? Either.right(chain)
+        : Either.left(new InvalidChainError({ chainId: chain, message: `Unsupported chain ID: ${chain}` }));
 
 const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 

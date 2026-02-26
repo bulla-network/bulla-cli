@@ -13,5 +13,4 @@ export interface InstantPaymentEncoderService {
     }) => Effect.Effect<Hex>;
 }
 
-export const InstantPaymentEncoderService =
-    Context.GenericTag<InstantPaymentEncoderService>('InstantPaymentEncoderService');
+export const InstantPaymentEncoderService = Context.GenericTag<InstantPaymentEncoderService>('InstantPaymentEncoderService');
