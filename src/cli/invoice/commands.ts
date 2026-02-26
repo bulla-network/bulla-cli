@@ -52,7 +52,6 @@ import {
     callbackSelectorOption,
 } from '../options/invoice-options.js';
 import { formatTransaction, formatResult, type OutputFormat } from '../formatters/index.js';
-import { makeSignerLayer, BuildModeLayers } from '../../infrastructure/layers.js';
 import type { Hex } from '../../domain/types/eth.js';
 
 // ============================================================================
@@ -96,7 +95,7 @@ export const invoiceCreateBuildCommand = Command.make(
             );
             if (!params) return;
 
-            const tx = yield* buildCreateInvoice(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildCreateInvoice(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -145,7 +144,7 @@ export const invoiceCreateExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendCreateInvoice(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -179,7 +178,7 @@ export const invoicePayBuildCommand = Command.make(
 
             const { params, tokenAddress } = result;
 
-            const tx = yield* buildPayInvoice(params, tokenAddress).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildPayInvoice(params, tokenAddress);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -207,7 +206,7 @@ export const invoicePayExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const txResult = yield* sendPayInvoice(params, tokenAddress).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -238,7 +237,7 @@ export const invoiceCancelBuildCommand = Command.make(
             const params = yield* validateCancelInvoiceParams(chain, claimId, note);
             if (!params) return;
 
-            const tx = yield* buildCancelInvoice(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildCancelInvoice(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -263,7 +262,7 @@ export const invoiceCancelExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendCancelInvoice(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -293,7 +292,7 @@ export const invoiceImpairBuildCommand = Command.make(
             const params = yield* validateImpairInvoiceParams(chain, claimId);
             if (!params) return;
 
-            const tx = yield* buildImpairInvoice(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildImpairInvoice(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -317,7 +316,7 @@ export const invoiceImpairExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendImpairInvoice(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -347,7 +346,7 @@ export const invoiceMarkPaidBuildCommand = Command.make(
             const params = yield* validateMarkInvoiceAsPaidParams(chain, claimId);
             if (!params) return;
 
-            const tx = yield* buildMarkInvoiceAsPaid(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildMarkInvoiceAsPaid(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -371,7 +370,7 @@ export const invoiceMarkPaidExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendMarkInvoiceAsPaid(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -402,7 +401,7 @@ export const invoiceUpdateBindingBuildCommand = Command.make(
             const params = yield* validateUpdateBindingParams(chain, claimId, binding);
             if (!params) return;
 
-            const tx = yield* buildUpdateBinding(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildUpdateBinding(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -427,7 +426,7 @@ export const invoiceUpdateBindingExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendUpdateBinding(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -459,7 +458,7 @@ export const invoiceSetCallbackBuildCommand = Command.make(
             const params = yield* validateSetPaidInvoiceCallbackParams(chain, claimId, callbackContract, callbackSelector);
             if (!params) return;
 
-            const tx = yield* buildSetPaidInvoiceCallback(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildSetPaidInvoiceCallback(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -485,7 +484,7 @@ export const invoiceSetCallbackExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendSetPaidInvoiceCallback(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -516,7 +515,7 @@ export const invoiceAcceptPoBuildCommand = Command.make(
             const params = yield* validateAcceptPurchaseOrderParams(chain, claimId, depositAmount);
             if (!params) return;
 
-            const tx = yield* buildAcceptPurchaseOrder(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildAcceptPurchaseOrder(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -541,7 +540,7 @@ export const invoiceAcceptPoExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendAcceptPurchaseOrder(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 
@@ -571,7 +570,7 @@ export const invoiceDeliverPoBuildCommand = Command.make(
             const params = yield* validateDeliverPurchaseOrderParams(chain, claimId);
             if (!params) return;
 
-            const tx = yield* buildDeliverPurchaseOrder(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildDeliverPurchaseOrder(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -595,7 +594,7 @@ export const invoiceDeliverPoExecuteCommand = Command.make(
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
             const result = yield* sendDeliverPurchaseOrder(params).pipe(
-                Effect.provide(signerLayer),
+                Effect.provide(signerLayer)
                 Effect.provide(BuildModeLayers),
             );
 

@@ -6,7 +6,7 @@ import type { EthAddress, ChainId } from '../domain/types/eth.js';
 
 export interface ChainContracts {
     readonly bullaInstantPayment: EthAddress;
-    readonly bullaInvoice: EthAddress;
+    readonly bullaInvoice?: EthAddress;
 }
 
 export const REGISTRY: Record<ChainId, ChainContracts> = {
@@ -15,6 +15,7 @@ export const REGISTRY: Record<ChainId, ChainContracts> = {
     56: { bullaInstantPayment: '0xa9a04d0C22B6f264BC72a108d124f25BD199c928' as EthAddress, bullaInvoice: '0xba80d22b532eb1a2326334f35565af551f9c8af7' as EthAddress },
     100: { bullaInstantPayment: '0xA2d3332AdC23109129651A85388eB6561C69074A' as EthAddress, bullaInvoice: '0xd60f8fc651bdcee2c6ed9914d610c0e22ce190d6' as EthAddress },
     137: { bullaInstantPayment: '0x712359c61534c5da10821c09d0e9c7c2312e1d91' as EthAddress, bullaInvoice: '0x7c2cc85cb30844b81524e703f04a5ee98e3313fb' as EthAddress },
+    151: { bullaInstantPayment: '0xce704a7Fae206ad009852258dDD8574B844eDa3b' as EthAddress },
     8453: { bullaInstantPayment: '0x26719d2A1073291559A9F5465Fafe73972B31b1f' as EthAddress, bullaInvoice: '0x1E1d535a41515D3D2c29C1524C825236D67733E1' as EthAddress },
     42161: { bullaInstantPayment: '0x1b4DB52FD952F70d3D28bfbd406dB71940eD8cA9' as EthAddress, bullaInvoice: '0x74c62f475464a03a462578d65629240b34221c1b' as EthAddress },
     42220: { bullaInstantPayment: '0x48D283521Ff91a1e83A16a7138B549C34BeDD44c' as EthAddress, bullaInvoice: '0xdeb31d99d92d92988b2cce4312c807fbf4406f4f' as EthAddress },
@@ -28,6 +29,7 @@ export const SUBGRAPH_ENDPOINTS: Partial<Record<ChainId, string>> = {
     56: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-bnb_chain/v2-main/gn',
     100: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-gnosis/v2-main/gn',
     137: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-polygon/v2-main/gn',
+    151: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-redbelly/v2-main/gn',
     8453: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-base/v2-main/gn',
     42161: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-arbitrum/v2-main/gn',
     42220: 'https://api.goldsky.com/api/public/project_clxvwihx9eci401ud1suddgpf/subgraphs/bulla-contracts-celo/v2-main/gn',
@@ -41,6 +43,7 @@ export const CHAIN_DISPLAY_NAMES: Record<ChainId, string> = {
     56: 'BNB Chain',
     100: 'Gnosis Chain',
     137: 'Polygon',
+    151: 'RedBelly',
     8453: 'Base',
     42161: 'Arbitrum',
     42220: 'Celo',

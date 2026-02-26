@@ -15,7 +15,6 @@ import {
 import { formatTransaction, formatResult, type OutputFormat } from '../formatters/index.js';
 import { makeSignerLayer } from '../../infrastructure/layers.js';
 import type { Hex } from '../../domain/types/eth.js';
-import { BuildModeLayers } from '../../infrastructure/layers.js';
 
 // Build command
 export const payBuildCommand = Command.make(
@@ -35,7 +34,7 @@ export const payBuildCommand = Command.make(
             const params = yield* validateInstantPaymentParams(chain, to, amount, token, description, tags, ipfsHash);
             if (!params) return;
 
-            const tx = yield* buildInstantPayment(params).pipe(Effect.provide(BuildModeLayers));
+            const tx = yield* buildInstantPayment(params);
             const output = formatTransaction(tx, params.chainId, format as OutputFormat);
             yield* Console.log(output);
         }),
@@ -64,10 +63,7 @@ export const payExecuteCommand = Command.make(
             const resolvedRpcUrl = Option.getOrUndefined(rpcUrl);
             const signerLayer = makeSignerLayer(privateKey as Hex, resolvedRpcUrl);
 
-            const result = yield* sendInstantPayment(params).pipe(
-                Effect.provide(signerLayer),
-                Effect.provide(BuildModeLayers),
-            );
+            const result = yield* sendInstantPayment(params).pipe(Effect.provide(signerLayer));
 
             const output = formatResult(result, format as OutputFormat);
             yield* Console.log(output);
