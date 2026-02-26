@@ -15,6 +15,7 @@ import { isNativeToken } from '../../domain/types/token.js';
 import { InvoiceEncoderService } from '../ports/invoice-encoder-port.js';
 import { RegistryService } from '../ports/registry-port.js';
 import { SignerService } from '../ports/signer-port.js';
+import { executeTransaction } from './transaction-utils.js';
 
 /**
  * Build mode: produces unsigned transaction for createInvoice
@@ -30,14 +31,10 @@ export const buildCreateInvoice = (
 
         const data = yield* encoder.encodeCreateInvoice(params);
 
-        // Calculate value: native token payment + deposit amount (if applicable)
-        let value = '0';
-        if (isNativeToken(params.token)) {
-            value = (params.claimAmount + params.depositAmount).toString();
-        } else if (params.depositAmount > 0n) {
-            // For ERC20 invoices with deposits, only the deposit is sent as value
-            value = params.depositAmount.toString();
-        }
+        // Invoice creation always has value = '0'
+        // Protocol fees are out of scope for now
+        // Deposit amounts are token values sent by the debtor to bind the claim, not part of the transaction value
+        const value = '0';
 
         return {
             to: contractAddress,
@@ -62,13 +59,10 @@ export const buildCreateInvoiceWithMetadata = (
 
         const data = yield* encoder.encodeCreateInvoiceWithMetadata(params, metadata);
 
-        // Calculate value: native token payment + deposit amount (if applicable)
-        let value = '0';
-        if (isNativeToken(params.token)) {
-            value = (params.claimAmount + params.depositAmount).toString();
-        } else if (params.depositAmount > 0n) {
-            value = params.depositAmount.toString();
-        }
+        // Invoice creation always has value = '0'
+        // Protocol fees are out of scope for now
+        // Deposit amounts are token values sent by the debtor to bind the claim, not part of the transaction value
+        const value = '0';
 
         return {
             to: contractAddress,
@@ -253,271 +247,54 @@ export const buildSetPaidInvoiceCallback = (
 /**
  * Execute mode: signs and sends createInvoice transaction
  */
-export const sendCreateInvoice = (
-    params: CreateInvoiceParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildCreateInvoice(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendCreateInvoice = (params: CreateInvoiceParams) => executeTransaction(buildCreateInvoice, params);
 
 /**
  * Execute mode: signs and sends createInvoiceWithMetadata transaction
  */
-export const sendCreateInvoiceWithMetadata = (
-    params: CreateInvoiceParams,
-    metadata: ClaimMetadata,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildCreateInvoiceWithMetadata(params, metadata);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendCreateInvoiceWithMetadata = (params: CreateInvoiceParams, metadata: ClaimMetadata) =>
+    executeTransaction((p: CreateInvoiceParams) => buildCreateInvoiceWithMetadata(p, metadata), params);
 
 /**
  * Execute mode: signs and sends payInvoice transaction
  */
-export const sendPayInvoice = (
-    params: PayInvoiceParams,
-    tokenAddress: string,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildPayInvoice(params, tokenAddress);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendPayInvoice = (params: PayInvoiceParams, tokenAddress: string) =>
+    executeTransaction((p: PayInvoiceParams) => buildPayInvoice(p, tokenAddress), params);
 
 /**
  * Execute mode: signs and sends cancelInvoice transaction
  */
-export const sendCancelInvoice = (
-    params: CancelInvoiceParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildCancelInvoice(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendCancelInvoice = (params: CancelInvoiceParams) => executeTransaction(buildCancelInvoice, params);
 
 /**
  * Execute mode: signs and sends impairInvoice transaction
  */
-export const sendImpairInvoice = (
-    params: InvoiceOperationParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildImpairInvoice(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendImpairInvoice = (params: InvoiceOperationParams) => executeTransaction(buildImpairInvoice, params);
 
 /**
  * Execute mode: signs and sends markInvoiceAsPaid transaction
  */
-export const sendMarkInvoiceAsPaid = (
-    params: InvoiceOperationParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildMarkInvoiceAsPaid(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendMarkInvoiceAsPaid = (params: InvoiceOperationParams) => executeTransaction(buildMarkInvoiceAsPaid, params);
 
 /**
  * Execute mode: signs and sends updateBinding transaction
  */
-export const sendUpdateBinding = (
-    params: UpdateBindingParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildUpdateBinding(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendUpdateBinding = (params: UpdateBindingParams) => executeTransaction(buildUpdateBinding, params);
 
 /**
  * Execute mode: signs and sends deliverPurchaseOrder transaction
  */
-export const sendDeliverPurchaseOrder = (
-    params: InvoiceOperationParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildDeliverPurchaseOrder(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendDeliverPurchaseOrder = (params: InvoiceOperationParams) =>
+    executeTransaction(buildDeliverPurchaseOrder, params);
 
 /**
  * Execute mode: signs and sends acceptPurchaseOrder transaction
  */
-export const sendAcceptPurchaseOrder = (
-    params: AcceptPurchaseOrderParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildAcceptPurchaseOrder(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendAcceptPurchaseOrder = (params: AcceptPurchaseOrderParams) =>
+    executeTransaction(buildAcceptPurchaseOrder, params);
 
 /**
  * Execute mode: signs and sends setPaidInvoiceCallback transaction
  */
-export const sendSetPaidInvoiceCallback = (
-    params: SetCallbackParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InvoiceEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildSetPaidInvoiceCallback(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0,
-        };
-    });
+export const sendSetPaidInvoiceCallback = (params: SetCallbackParams) =>
+    executeTransaction(buildSetPaidInvoiceCallback, params);

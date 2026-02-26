@@ -2,7 +2,7 @@ import { Command } from '@effect/cli';
 import { NodeContext, NodeRuntime } from '@effect/platform-node';
 import { Effect } from 'effect';
 import { createRequire } from 'node:module';
-import { payCommand } from './cli/commands/pay.js';
+import { payCommand } from './cli/instant-payment/commands.js';
 import { invoiceCommand } from './cli/commands/invoice.js';
 import { BuildModeLayers } from './infrastructure/layers.js';
 

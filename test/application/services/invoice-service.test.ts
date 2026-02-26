@@ -219,18 +219,18 @@ describe('buildCreateInvoice', () => {
         expect(result.operation).toBe(0);
     });
 
-    it('sets value to claim amount for native token invoices', async () => {
+    it('sets value to "0" for native token invoices (deposit is not part of transaction value)', async () => {
         const params = makeCreateInvoiceParams({ tokenAddress: ZERO_ADDRESS, claimAmount: 500n });
         const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
-        expect(result.value).toBe('500');
+        expect(result.value).toBe('0');
     });
 
-    it('sets value to claim amount + deposit amount for native token invoices with deposits', async () => {
+    it('sets value to "0" for native token invoices with deposits (deposit is not part of transaction value)', async () => {
         const params = makeCreateInvoiceParams({ token: ZERO_ADDRESS, claimAmount: 1000n, depositAmount: 200n });
         const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
-        expect(result.value).toBe('1200');
+        expect(result.value).toBe('0');
     });
 
     it('sets value to "0" for ERC20 invoices without deposits', async () => {
@@ -240,11 +240,11 @@ describe('buildCreateInvoice', () => {
         expect(result.value).toBe('0');
     });
 
-    it('sets value to deposit amount for ERC20 invoices with deposits', async () => {
+    it('sets value to "0" for ERC20 invoices with deposits (deposit is not part of transaction value)', async () => {
         const params = makeCreateInvoiceParams({ token: ERC20_TOKEN, claimAmount: 1000n, depositAmount: 200n });
         const result = await Effect.runPromise(buildCreateInvoice(params).pipe(Effect.provide(BuildTestLayers)));
 
-        expect(result.value).toBe('200');
+        expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the createInvoice function selector', async () => {
@@ -290,11 +290,11 @@ describe('buildCreateInvoiceWithMetadata', () => {
         expect(result.operation).toBe(0);
     });
 
-    it('sets value correctly for native token invoices with metadata', async () => {
+    it('sets value to "0" for native token invoices with metadata (deposit is not part of transaction value)', async () => {
         const params = makeCreateInvoiceParams({ token: ZERO_ADDRESS, claimAmount: 1000n, depositAmount: 200n });
         const result = await Effect.runPromise(buildCreateInvoiceWithMetadata(params, metadata).pipe(Effect.provide(BuildTestLayers)));
 
-        expect(result.value).toBe('1200');
+        expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the createInvoiceWithMetadata function selector', async () => {
