@@ -1,6 +1,6 @@
 {
     "name": "@bulla/cli",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "Bulla Protocol CLI — build and send Bulla transactions from the command line",
     "type": "module",
     "license": "MIT",
@@ -62,10 +62,22 @@
                 "@semantic-release/commit-analyzer",
                 {
                     "releaseRules": [
-                        { "type": "feat", "release": "patch" },
-                        { "type": "fix", "release": "patch" },
-                        { "type": "refactor", "release": "patch" },
-                        { "type": "perf", "release": "patch" }
+                        {
+                            "type": "feat",
+                            "release": "patch"
+                        },
+                        {
+                            "type": "fix",
+                            "release": "patch"
+                        },
+                        {
+                            "type": "refactor",
+                            "release": "patch"
+                        },
+                        {
+                            "type": "perf",
+                            "release": "patch"
+                        }
                     ]
                 }
             ],
