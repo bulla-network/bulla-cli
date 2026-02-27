@@ -50,3 +50,9 @@ export class InvoiceNotFoundError extends Data.TaggedError('InvoiceNotFoundError
     readonly claimId: bigint;
     readonly message: string;
 }> {}
+
+export class LoanNotFoundError extends Data.TaggedError('LoanNotFoundError')<{
+    readonly chainId: number;
+    readonly claimId: bigint;
+    readonly message: string;
+}> {}
