@@ -32,3 +32,11 @@ jobs:
 
             - name: Verify CLI runs
               run: node dist/index.js --version
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+
+            - name: Run e2e tests
+              run: yarn test:e2e
+              env:
+                  SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
