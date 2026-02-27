@@ -1,6 +1,6 @@
 {
     "name": "@bulla/cli",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Bulla Protocol CLI — build and send Bulla transactions from the command line",
     "type": "module",
     "license": "MIT",

@@ -1,3 +1,16 @@
+## [0.0.3](https://github.com/bulla-network/bulla-cli/compare/v0.0.2...v0.0.3) (2026-02-27)
+
+
+### Bug Fixes
+
+* make bullaInvoice optional in registry, restore RedBelly ([2722916](https://github.com/bulla-network/bulla-cli/commit/27229168ba5151bc90bb156eec560676e8d6325e))
+* resolve all TypeScript strict errors, add tsc to build ([12db45b](https://github.com/bulla-network/bulla-cli/commit/12db45b4466a1d3e082bfbcde707ef88491890bf))
+
+
+### Features
+
+* add bulla invoice commands ([#2](https://github.com/bulla-network/bulla-cli/issues/2)) ([89685f8](https://github.com/bulla-network/bulla-cli/commit/89685f80fd74876129ab436447a91d514872e0f0))
+
 ## [0.0.2](https://github.com/bulla-network/bulla-cli/compare/v0.0.1...v0.0.2) (2026-02-26)
 
 
