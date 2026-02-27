@@ -10,16 +10,8 @@ import {
     buildPayInvoice,
     buildSetPaidInvoiceCallback,
     buildUpdateBinding,
-    sendAcceptPurchaseOrder,
-    sendCancelInvoice,
-    sendCreateInvoice,
-    sendDeliverPurchaseOrder,
-    sendImpairInvoice,
-    sendMarkInvoiceAsPaid,
-    sendPayInvoice,
-    sendSetPaidInvoiceCallback,
-    sendUpdateBinding,
 } from '../../application/services/invoice-service.js';
+import { sendTransaction } from '../../application/services/transaction-utils.js';
 import type { Hex } from '../../domain/types/eth.js';
 import { makeReaderLayer, makeSignerLayer } from '../../infrastructure/layers.js';
 import { formatResult, formatTransaction, type OutputFormat } from '../formatters/index.js';
@@ -168,8 +160,9 @@ export const invoiceCreateExecuteCommand = Command.make(
                 impairmentGracePeriod,
                 depositAmount,
             );
+            const tx = yield* buildCreateInvoice(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendCreateInvoice(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a createInvoice transaction (requires private key)'));
@@ -213,9 +206,10 @@ export const invoicePayExecuteCommand = Command.make(
     ({ chain, claimId, paymentAmount, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validatePayInvoiceParams(chain, claimId, paymentAmount);
-            const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
             const readerLayer = makeReaderLayer(rpcUrl);
-            const result = yield* sendPayInvoice(params).pipe(Effect.provide(signerLayer), Effect.provide(readerLayer));
+            const tx = yield* buildPayInvoice(params).pipe(Effect.provide(readerLayer));
+            const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a payInvoice transaction (requires private key)'));
@@ -258,8 +252,9 @@ export const invoiceCancelExecuteCommand = Command.make(
     ({ chain, claimId, note, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateCancelInvoiceParams(chain, claimId, note);
+            const tx = yield* buildCancelInvoice(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendCancelInvoice(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a cancelInvoice transaction (requires private key)'));
@@ -300,8 +295,9 @@ export const invoiceImpairExecuteCommand = Command.make(
     ({ chain, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateImpairInvoiceParams(chain, claimId);
+            const tx = yield* buildImpairInvoice(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendImpairInvoice(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an impairInvoice transaction (requires private key)'));
@@ -342,8 +338,9 @@ export const invoiceMarkPaidExecuteCommand = Command.make(
     ({ chain, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateMarkInvoiceAsPaidParams(chain, claimId);
+            const tx = yield* buildMarkInvoiceAsPaid(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendMarkInvoiceAsPaid(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a markInvoiceAsPaid transaction (requires private key)'));
@@ -386,8 +383,9 @@ export const invoiceUpdateBindingExecuteCommand = Command.make(
     ({ chain, claimId, binding, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateUpdateBindingParams(chain, claimId, binding);
+            const tx = yield* buildUpdateBinding(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendUpdateBinding(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an updateBinding transaction (requires private key)'));
@@ -432,8 +430,9 @@ export const invoiceSetCallbackExecuteCommand = Command.make(
     ({ chain, claimId, callbackContract, callbackSelector, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateSetPaidInvoiceCallbackParams(chain, claimId, callbackContract, callbackSelector);
+            const tx = yield* buildSetPaidInvoiceCallback(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendSetPaidInvoiceCallback(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a setPaidInvoiceCallback transaction (requires private key)'));
@@ -477,9 +476,10 @@ export const invoiceAcceptPoExecuteCommand = Command.make(
     ({ chain, claimId, depositAmount, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateAcceptPurchaseOrderParams(chain, claimId, depositAmount);
-            const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
             const readerLayer = makeReaderLayer(rpcUrl);
-            const result = yield* sendAcceptPurchaseOrder(params).pipe(Effect.provide(signerLayer), Effect.provide(readerLayer));
+            const tx = yield* buildAcceptPurchaseOrder(params).pipe(Effect.provide(readerLayer));
+            const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an acceptPurchaseOrder transaction (requires private key)'));
@@ -520,8 +520,9 @@ export const invoiceDeliverPoExecuteCommand = Command.make(
     ({ chain, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateDeliverPurchaseOrderParams(chain, claimId);
+            const tx = yield* buildDeliverPurchaseOrder(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendDeliverPurchaseOrder(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a deliverPurchaseOrder transaction (requires private key)'));

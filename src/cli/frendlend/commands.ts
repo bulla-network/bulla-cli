@@ -8,14 +8,8 @@ import {
     buildPayLoan,
     buildRejectLoanOffer,
     buildSetPaidLoanCallback,
-    sendAcceptLoan,
-    sendImpairLoan,
-    sendMarkLoanAsPaid,
-    sendOfferLoan,
-    sendPayLoan,
-    sendRejectLoanOffer,
-    sendSetPaidLoanCallback,
 } from '../../application/services/frendlend-service.js';
+import { sendTransaction } from '../../application/services/transaction-utils.js';
 import type { Hex } from '../../domain/types/eth.js';
 import { makeSignerLayer } from '../../infrastructure/layers.js';
 import { formatResult, formatTransaction, type OutputFormat } from '../formatters/index.js';
@@ -165,8 +159,9 @@ export const frendlendOfferLoanExecuteCommand = Command.make(
                 callbackContract,
                 callbackSelector,
             );
+            const tx = yield* buildOfferLoan(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendOfferLoan(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an offerLoan transaction (requires private key)'));
@@ -207,8 +202,9 @@ export const frendlendRejectOfferExecuteCommand = Command.make(
     ({ chain, offerId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateRejectLoanOfferParams(chain, offerId);
+            const tx = yield* buildRejectLoanOffer(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendRejectLoanOffer(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a rejectLoanOffer transaction (requires private key)'));
@@ -251,8 +247,9 @@ export const frendlendAcceptLoanExecuteCommand = Command.make(
     ({ chain, offerId, receiver, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateAcceptLoanParams(chain, offerId, Option.getOrUndefined(receiver));
+            const tx = yield* buildAcceptLoan(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendAcceptLoan(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an acceptLoan transaction (requires private key)'));
@@ -295,8 +292,9 @@ export const frendlendPayLoanExecuteCommand = Command.make(
     ({ chain, claimId, paymentAmount, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validatePayLoanParams(chain, claimId, paymentAmount);
+            const tx = yield* buildPayLoan(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendPayLoan(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a payLoan transaction (requires private key)'));
@@ -337,8 +335,9 @@ export const frendlendImpairLoanExecuteCommand = Command.make(
     ({ chain, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateImpairLoanParams(chain, claimId);
+            const tx = yield* buildImpairLoan(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendImpairLoan(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an impairLoan transaction (requires private key)'));
@@ -379,8 +378,9 @@ export const frendlendMarkPaidExecuteCommand = Command.make(
     ({ chain, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateMarkLoanAsPaidParams(chain, claimId);
+            const tx = yield* buildMarkLoanAsPaid(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendMarkLoanAsPaid(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a markLoanAsPaid transaction (requires private key)'));
@@ -425,8 +425,9 @@ export const frendlendSetCallbackExecuteCommand = Command.make(
     ({ chain, claimId, callbackContract, callbackSelector, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateSetLoanCallbackParams(chain, claimId, callbackContract, callbackSelector);
+            const tx = yield* buildSetPaidLoanCallback(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendSetPaidLoanCallback(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a setPaidLoanCallback transaction (requires private key)'));

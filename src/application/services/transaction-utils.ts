@@ -5,19 +5,16 @@ import type { TransactionResult, UnsignedTransaction } from '../../domain/types/
 import { SignerService } from '../ports/signer-port.js';
 
 /**
- * Generic transaction execution utility.
- * Takes a build function and parameters, builds the unsigned transaction,
- * then signs and sends it using the signer service.
+ * Signs and sends an already-built unsigned transaction.
  */
-export const executeTransaction = <TParams extends { chainId: ChainId }, TError, TReqs>(
-    buildFn: (params: TParams) => Effect.Effect<UnsignedTransaction, TError, TReqs>,
-    params: TParams,
-): Effect.Effect<TransactionResult, TError | SignerRequiredError, SignerService | TReqs> =>
+export const sendTransaction = (
+    chainId: ChainId,
+    tx: UnsignedTransaction,
+): Effect.Effect<TransactionResult, SignerRequiredError, SignerService> =>
     Effect.gen(function* () {
         const signer = yield* SignerService;
-        const tx = yield* buildFn(params);
 
-        const txHash = yield* signer.signAndSend(params.chainId, {
+        const txHash = yield* signer.signAndSend(chainId, {
             to: tx.to,
             value: tx.value,
             data: tx.data,
@@ -25,7 +22,7 @@ export const executeTransaction = <TParams extends { chainId: ChainId }, TError,
 
         return {
             txHash,
-            chainId: params.chainId,
+            chainId,
             blockNumber: 0,
         };
     });
