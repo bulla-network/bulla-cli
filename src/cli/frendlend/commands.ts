@@ -17,9 +17,9 @@ import {
     sendSetPaidLoanCallback,
 } from '../../application/services/frendlend-service.js';
 import type { Hex } from '../../domain/types/eth.js';
-import { makeFrendLendReader, makeSignerLayer } from '../../infrastructure/layers.js';
+import { makeSignerLayer } from '../../infrastructure/layers.js';
 import { formatResult, formatTransaction, type OutputFormat } from '../formatters/index.js';
-import { chainOption, formatOption, requiredRpcUrlOption, rpcUrlOption } from '../options/common.js';
+import { chainOption, formatOption, rpcUrlOption } from '../options/common.js';
 import {
     callbackContractDefaultOption,
     callbackSelectorDefaultOption,
@@ -228,13 +228,12 @@ export const frendlendAcceptLoanBuildCommand = Command.make(
         chain: chainOption,
         offerId: offerIdOption,
         receiver: receiverOption,
-        rpcUrl: requiredRpcUrlOption,
         format: formatOption,
     },
-    ({ chain, offerId, receiver, rpcUrl, format }) =>
+    ({ chain, offerId, receiver, format }) =>
         Effect.gen(function* () {
             const params = yield* validateAcceptLoanParams(chain, offerId, Option.getOrUndefined(receiver));
-            const tx = yield* buildAcceptLoan(params).pipe(Effect.provide(makeFrendLendReader(rpcUrl)));
+            const tx = yield* buildAcceptLoan(params);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Build an unsigned acceptLoan transaction (no private key required)'));
@@ -246,15 +245,14 @@ export const frendlendAcceptLoanExecuteCommand = Command.make(
         offerId: offerIdOption,
         receiver: receiverOption,
         privateKey: privateKeyOption,
-        rpcUrl: requiredRpcUrlOption,
+        rpcUrl: rpcUrlOption,
         format: formatOption,
     },
     ({ chain, offerId, receiver, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateAcceptLoanParams(chain, offerId, Option.getOrUndefined(receiver));
-            const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
-            const readerLayer = makeFrendLendReader(rpcUrl);
-            const result = yield* sendAcceptLoan(params).pipe(Effect.provide(signerLayer), Effect.provide(readerLayer));
+            const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
+            const result = yield* sendAcceptLoan(params).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an acceptLoan transaction (requires private key)'));
@@ -274,13 +272,12 @@ export const frendlendPayLoanBuildCommand = Command.make(
         chain: chainOption,
         claimId: claimIdOption,
         paymentAmount: paymentAmountOption,
-        rpcUrl: requiredRpcUrlOption,
         format: formatOption,
     },
-    ({ chain, claimId, paymentAmount, rpcUrl, format }) =>
+    ({ chain, claimId, paymentAmount, format }) =>
         Effect.gen(function* () {
             const params = yield* validatePayLoanParams(chain, claimId, paymentAmount);
-            const tx = yield* buildPayLoan(params).pipe(Effect.provide(makeFrendLendReader(rpcUrl)));
+            const tx = yield* buildPayLoan(params);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Build an unsigned payLoan transaction (no private key required)'));
@@ -292,15 +289,14 @@ export const frendlendPayLoanExecuteCommand = Command.make(
         claimId: claimIdOption,
         paymentAmount: paymentAmountOption,
         privateKey: privateKeyOption,
-        rpcUrl: requiredRpcUrlOption,
+        rpcUrl: rpcUrlOption,
         format: formatOption,
     },
     ({ chain, claimId, paymentAmount, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validatePayLoanParams(chain, claimId, paymentAmount);
-            const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
-            const readerLayer = makeFrendLendReader(rpcUrl);
-            const result = yield* sendPayLoan(params).pipe(Effect.provide(signerLayer), Effect.provide(readerLayer));
+            const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
+            const result = yield* sendPayLoan(params).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send a payLoan transaction (requires private key)'));

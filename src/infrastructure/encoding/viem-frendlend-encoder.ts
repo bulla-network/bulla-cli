@@ -27,7 +27,7 @@ const makeLoanRequestArgs = (params: Omit<OfferLoanParams, 'chainId'>) => ({
     impairmentGracePeriod: params.impairmentGracePeriod,
     expiresAt: params.expiresAt,
     callbackContract: params.callbackContract,
-    callbackSelector: params.callbackSelector as Hex,
+    callbackSelector: params.callbackSelector,
 });
 
 const encodeOfferLoan = (params: Omit<OfferLoanParams, 'chainId'>): Effect.Effect<Hex, never, never> =>
@@ -113,7 +113,7 @@ const encodeSetPaidLoanCallback = (params: Omit<SetLoanCallbackParams, 'chainId'
         encodeFunctionData({
             abi: bullaFrendLendV2Abi,
             functionName: 'setPaidLoanCallback',
-            args: [params.loanId, params.callbackContract, params.callbackSelector as Hex],
+            args: [params.loanId, params.callbackContract, params.callbackSelector],
         }),
     );
 

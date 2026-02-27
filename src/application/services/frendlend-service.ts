@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import type { ContractNotFoundError, LoanNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
+import type { ContractNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
 import type {
     AcceptLoanParams,
     LoanOperationParams,
@@ -8,10 +8,8 @@ import type {
     RejectLoanOfferParams,
     SetLoanCallbackParams,
 } from '../../domain/types/frendlend.js';
-import { isNativeToken } from '../../domain/types/token.js';
 import type { UnsignedTransaction } from '../../domain/types/transaction.js';
 import { FrendLendEncoderService } from '../ports/frendlend-encoder-port.js';
-import { FrendLendReaderService } from '../ports/frendlend-reader-port.js';
 import { RegistryService } from '../ports/registry-port.js';
 import { executeTransaction } from './transaction-utils.js';
 
@@ -63,31 +61,21 @@ export const buildRejectLoanOffer = (
 
 /**
  * Build mode: produces unsigned transaction for acceptLoan.
- * Reads the loan offer on-chain to determine if the token is native or ERC20.
  * If params.receiver is set, uses acceptLoanWithReceiver.
  */
 export const buildAcceptLoan = (
     params: AcceptLoanParams,
-): Effect.Effect<
-    UnsignedTransaction,
-    ContractNotFoundError | UnsupportedChainError | LoanNotFoundError,
-    RegistryService | FrendLendEncoderService | FrendLendReaderService
-> =>
+): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | FrendLendEncoderService> =>
     Effect.gen(function* () {
         const registry = yield* RegistryService;
         const encoder = yield* FrendLendEncoderService;
-        const reader = yield* FrendLendReaderService;
 
         const contractAddress = yield* registry.getFrendLendAddress(params.chainId);
-        const offer = yield* reader.getLoanOffer(params.chainId, params.offerId);
         const data = yield* encoder.encodeAcceptLoan(params);
-
-        // If the loan token is native (ETH/MATIC/etc), the creditor must send the loan amount as tx value
-        const value = isNativeToken(offer.params.token) ? offer.params.loanAmount.toString() : '0';
 
         return {
             to: contractAddress,
-            value,
+            value: '0',
             data,
             operation: 0 as const,
         };
@@ -95,29 +83,20 @@ export const buildAcceptLoan = (
 
 /**
  * Build mode: produces unsigned transaction for payLoan.
- * Reads the loan on-chain to determine if the token is native or ERC20.
  */
 export const buildPayLoan = (
     params: PayLoanParams,
-): Effect.Effect<
-    UnsignedTransaction,
-    ContractNotFoundError | UnsupportedChainError | LoanNotFoundError,
-    RegistryService | FrendLendEncoderService | FrendLendReaderService
-> =>
+): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | FrendLendEncoderService> =>
     Effect.gen(function* () {
         const registry = yield* RegistryService;
         const encoder = yield* FrendLendEncoderService;
-        const reader = yield* FrendLendReaderService;
 
         const contractAddress = yield* registry.getFrendLendAddress(params.chainId);
-        const loan = yield* reader.getLoan(params.chainId, params.claimId);
         const data = yield* encoder.encodePayLoan(params);
-
-        const value = isNativeToken(loan.token) ? params.paymentAmount.toString() : '0';
 
         return {
             to: contractAddress,
-            value,
+            value: '0',
             data,
             operation: 0 as const,
         };

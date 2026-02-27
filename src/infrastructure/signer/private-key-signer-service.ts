@@ -6,12 +6,13 @@ import { SignerService } from '../../application/ports/signer-port.js';
 import { SignerRequiredError } from '../../domain/errors.js';
 import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 
-const chainMap: Partial<Record<ChainId, chains.Chain>> = {
+const chainMap: Record<ChainId, chains.Chain> = {
     1: chains.mainnet,
     10: chains.optimism,
     56: chains.bsc,
     100: chains.gnosis,
     137: chains.polygon,
+    151: chains.redbellyMainnet,
     8453: chains.base,
     42161: chains.arbitrum,
     42220: chains.celo,

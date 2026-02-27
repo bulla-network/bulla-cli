@@ -141,7 +141,7 @@ const encodeSetPaidInvoiceCallback = (params: Omit<SetCallbackParams, 'chainId'>
         encodeFunctionData({
             abi: bullaInvoiceAbi,
             functionName: 'setPaidInvoiceCallback',
-            args: [params.invoiceId, params.callbackContract, params.callbackSelector as Hex],
+            args: [params.invoiceId, params.callbackContract, params.callbackSelector],
         }),
     );
 

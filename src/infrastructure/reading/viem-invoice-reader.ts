@@ -8,12 +8,13 @@ import type { ChainId, EthAddress } from '../../domain/types/eth.js';
 import type { InvoiceOnChain } from '../../domain/types/invoice.js';
 import { bullaInvoiceAbi } from '../abi/bulla-invoice.js';
 
-const chainMap: Partial<Record<ChainId, chains.Chain>> = {
+const chainMap: Record<ChainId, chains.Chain> = {
     1: chains.mainnet,
     10: chains.optimism,
     56: chains.bsc,
     100: chains.gnosis,
     137: chains.polygon,
+    151: chains.redbellyMainnet,
     8453: chains.base,
     42161: chains.arbitrum,
     42220: chains.celo,

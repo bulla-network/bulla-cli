@@ -1,6 +1,6 @@
 import { Options } from '@effect/cli';
 
-export const offerIdOption = Options.integer('offer-id').pipe(Options.withDescription('The ID of the loan offer'));
+export const offerIdOption = Options.text('offer-id').pipe(Options.withDescription('The ID of the loan offer (uint256)'));
 
 export const termLengthOption = Options.integer('term-length').pipe(
     Options.withDescription('Loan term length in seconds'),

@@ -1,4 +1,4 @@
-import type { ChainId, EthAddress } from './eth.js';
+import type { ChainId, EthAddress, Hex } from './eth.js';
 import type { ClaimMetadata, InterestConfig } from './invoice.js';
 
 // Reuse ClaimBinding and Status enums from invoice (same underlying Types.sol)
@@ -27,7 +27,7 @@ export interface OfferLoanParams {
     impairmentGracePeriod: bigint; // seconds
     expiresAt: bigint; // timestamp, 0 = no expiry
     callbackContract: EthAddress; // 0x0 = no callback
-    callbackSelector: string; // bytes4 hex, 0x00000000 = no callback
+    callbackSelector: Hex; // bytes4 hex, 0x00000000 = no callback
     metadata?: ClaimMetadata;
 }
 
@@ -62,7 +62,7 @@ export interface SetLoanCallbackParams {
     chainId: ChainId;
     loanId: bigint;
     callbackContract: EthAddress;
-    callbackSelector: string; // bytes4 hex
+    callbackSelector: Hex; // bytes4 hex
 }
 
 // Interest computation state from on-chain
@@ -102,7 +102,7 @@ export interface LoanOfferOnChain {
         impairmentGracePeriod: bigint;
         expiresAt: bigint;
         callbackContract: EthAddress;
-        callbackSelector: string;
+        callbackSelector: Hex;
     };
     requestedByCreditor: boolean;
 }

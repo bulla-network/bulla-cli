@@ -2,7 +2,6 @@ import { Effect, Layer } from 'effect';
 import { encodeFunctionData } from 'viem';
 import { describe, expect, it } from 'vitest';
 import { FrendLendEncoderService } from '../../../src/application/ports/frendlend-encoder-port.js';
-import { FrendLendReaderService } from '../../../src/application/ports/frendlend-reader-port.js';
 import { RegistryService } from '../../../src/application/ports/registry-port.js';
 import {
     buildAcceptLoan,
@@ -16,22 +15,18 @@ import {
 import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import type {
     AcceptLoanParams,
-    LoanOfferOnChain,
-    LoanOnChain,
     LoanOperationParams,
     OfferLoanParams,
     PayLoanParams,
     RejectLoanOfferParams,
     SetLoanCallbackParams,
 } from '../../../src/domain/types/frendlend.js';
-import { LoanStatus } from '../../../src/domain/types/frendlend.js';
 import { ZERO_ADDRESS } from '../../../src/domain/types/token.js';
 import { bullaFrendLendV2Abi } from '../../../src/infrastructure/abi/bulla-frendlend-v2.js';
 
 const SEPOLIA_FRENDLEND_CONTRACT = '0x4d6A66D32CF34270e4cc9C9F201CA4dB650Be3f2' as EthAddress;
 const DEBTOR = '0x1234567890abcdef1234567890abcdef12345678' as EthAddress;
 const CREDITOR = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as EthAddress;
-const ERC20_TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as EthAddress;
 
 const makeOfferLoanParams = (overrides: Partial<OfferLoanParams> = {}): OfferLoanParams => ({
     chainId: 11155111 as ChainId,
@@ -45,7 +40,7 @@ const makeOfferLoanParams = (overrides: Partial<OfferLoanParams> = {}): OfferLoa
     impairmentGracePeriod: 0n,
     expiresAt: 0n,
     callbackContract: ZERO_ADDRESS,
-    callbackSelector: '0x00000000',
+    callbackSelector: '0x00000000' as Hex,
     ...overrides,
 });
 
@@ -78,7 +73,7 @@ const makeSetLoanCallbackParams = (overrides: Partial<SetLoanCallbackParams> = {
     chainId: 11155111 as ChainId,
     loanId: 1n,
     callbackContract: '0x9999999999999999999999999999999999999999' as EthAddress,
-    callbackSelector: '0x12345678',
+    callbackSelector: '0x12345678' as Hex,
     ...overrides,
 });
 
@@ -108,7 +103,7 @@ const TestFrendLendEncoder = Layer.succeed(FrendLendEncoderService, {
                         impairmentGracePeriod: params.impairmentGracePeriod,
                         expiresAt: params.expiresAt,
                         callbackContract: params.callbackContract as `0x${string}`,
-                        callbackSelector: params.callbackSelector as `0x${string}`,
+                        callbackSelector: params.callbackSelector,
                     },
                 ],
             }) as Hex,
@@ -130,7 +125,7 @@ const TestFrendLendEncoder = Layer.succeed(FrendLendEncoderService, {
                         impairmentGracePeriod: params.impairmentGracePeriod,
                         expiresAt: params.expiresAt,
                         callbackContract: params.callbackContract as `0x${string}`,
-                        callbackSelector: params.callbackSelector as `0x${string}`,
+                        callbackSelector: params.callbackSelector,
                     },
                     metadata,
                 ],
@@ -187,53 +182,10 @@ const TestFrendLendEncoder = Layer.succeed(FrendLendEncoderService, {
             encodeFunctionData({
                 abi: bullaFrendLendV2Abi,
                 functionName: 'setPaidLoanCallback',
-                args: [params.loanId, params.callbackContract as `0x${string}`, params.callbackSelector as `0x${string}`],
+                args: [params.loanId, params.callbackContract as `0x${string}`, params.callbackSelector],
             }) as Hex,
         ),
 });
-
-const makeLoanOnChain = (token: EthAddress): LoanOnChain => ({
-    claimAmount: 1000000000000000000n,
-    paidAmount: 0n,
-    status: LoanStatus.Repaying,
-    binding: 2,
-    debtor: DEBTOR,
-    creditor: CREDITOR,
-    token,
-    controller: ZERO_ADDRESS,
-    dueBy: 0n,
-    acceptedAt: 0n,
-    interestConfig: { interestRateBps: 500, numberOfPeriodsPerYear: 12 },
-    interestComputationState: {
-        accruedInterest: 0n,
-        latestPeriodNumber: 0n,
-        protocolFeeBps: 0,
-        totalGrossInterestPaid: 0n,
-    },
-});
-
-const makeLoanOfferOnChain = (token: EthAddress): LoanOfferOnChain => ({
-    params: {
-        termLength: 2592000n,
-        interestConfig: { interestRateBps: 500, numberOfPeriodsPerYear: 12 },
-        loanAmount: 1000000000000000000n,
-        creditor: CREDITOR,
-        debtor: DEBTOR,
-        description: 'Test loan',
-        token,
-        impairmentGracePeriod: 0n,
-        expiresAt: 0n,
-        callbackContract: ZERO_ADDRESS,
-        callbackSelector: '0x00000000',
-    },
-    requestedByCreditor: true,
-});
-
-const makeTestReaderService = (token: EthAddress) =>
-    Layer.succeed(FrendLendReaderService, {
-        getLoan: () => Effect.succeed(makeLoanOnChain(token)),
-        getLoanOffer: () => Effect.succeed(makeLoanOfferOnChain(token)),
-    });
 
 const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestFrendLendEncoder);
 
@@ -301,34 +253,24 @@ describe('buildRejectLoanOffer', () => {
 });
 
 describe('buildAcceptLoan', () => {
-    const nativeTokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ZERO_ADDRESS));
-    const erc20TokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ERC20_TOKEN));
-
     it('produces an unsigned transaction with the correct contract address', async () => {
         const params = makeAcceptLoanParams();
-        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(nativeTokenLayers)));
+        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.to).toBe(SEPOLIA_FRENDLEND_CONTRACT);
         expect(result.operation).toBe(0);
     });
 
-    it('sets value to loan amount for native token loans', async () => {
+    it('always sets value to "0" (no native token support)', async () => {
         const params = makeAcceptLoanParams();
-        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(nativeTokenLayers)));
-
-        expect(result.value).toBe('1000000000000000000');
-    });
-
-    it('sets value to "0" for ERC20 token loans', async () => {
-        const params = makeAcceptLoanParams();
-        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(erc20TokenLayers)));
+        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the acceptLoan function selector', async () => {
         const params = makeAcceptLoanParams();
-        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(nativeTokenLayers)));
+        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
@@ -337,7 +279,7 @@ describe('buildAcceptLoan', () => {
     it('uses acceptLoanWithReceiver when receiver is provided', async () => {
         const receiver = '0x5555555555555555555555555555555555555555' as EthAddress;
         const params = makeAcceptLoanParams({ receiver });
-        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(nativeTokenLayers)));
+        const result = await Effect.runPromise(buildAcceptLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         // acceptLoanWithReceiver has a longer calldata than acceptLoan due to the extra address arg
@@ -346,34 +288,24 @@ describe('buildAcceptLoan', () => {
 });
 
 describe('buildPayLoan', () => {
-    const nativeTokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ZERO_ADDRESS));
-    const erc20TokenLayers = Layer.mergeAll(BuildTestLayers, makeTestReaderService(ERC20_TOKEN));
-
     it('produces an unsigned transaction with the correct contract address', async () => {
         const params = makePayLoanParams();
-        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(nativeTokenLayers)));
+        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.to).toBe(SEPOLIA_FRENDLEND_CONTRACT);
         expect(result.operation).toBe(0);
     });
 
-    it('sets value to payment amount for native token payments', async () => {
-        const params = makePayLoanParams({ paymentAmount: 500n });
-        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(nativeTokenLayers)));
-
-        expect(result.value).toBe('500');
-    });
-
-    it('sets value to "0" for ERC20 payments', async () => {
-        const params = makePayLoanParams({ paymentAmount: 1000n });
-        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(erc20TokenLayers)));
+    it('always sets value to "0" (no native token support)', async () => {
+        const params = makePayLoanParams();
+        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the payLoan function selector', async () => {
         const params = makePayLoanParams();
-        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(nativeTokenLayers)));
+        const result = await Effect.runPromise(buildPayLoan(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
