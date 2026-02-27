@@ -1,4 +1,5 @@
-import type { EthAddress, ChainId } from './eth.js';
+import { TAG_SEPARATOR } from '../constants.js';
+import type { ChainId, EthAddress } from './eth.js';
 
 /**
  * Input parameters for building an instant payment.
@@ -13,3 +14,10 @@ export interface InstantPaymentParams {
     readonly tags: readonly string[];
     readonly ipfsHash: string;
 }
+
+/** Sanitize and join tags according to Bulla convention. */
+export const formatTags = (tags: readonly string[]): string =>
+    tags
+        .map(t => t.trim())
+        .filter(t => t !== '')
+        .join(TAG_SEPARATOR);

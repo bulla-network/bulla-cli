@@ -1,15 +1,15 @@
 import { Effect, Layer } from 'effect';
-import { describe, expect, it } from 'vitest';
 import { encodeFunctionData } from 'viem';
-import { buildInstantPayment, sendInstantPayment } from '../../../src/application/services/instant-payment-service.js';
-import { RegistryService } from '../../../src/application/ports/registry-port.js';
+import { describe, expect, it } from 'vitest';
 import { InstantPaymentEncoderService } from '../../../src/application/ports/instant-payment-encoder-port.js';
+import { RegistryService } from '../../../src/application/ports/registry-port.js';
 import { SignerService } from '../../../src/application/ports/signer-port.js';
+import { buildInstantPayment, sendInstantPayment } from '../../../src/application/services/instant-payment-service.js';
 import { SignerRequiredError } from '../../../src/domain/errors.js';
-import { bullaInstantPaymentAbi } from '../../../src/infrastructure/abi/bulla-instant-payment.js';
-import type { EthAddress, Hex, ChainId } from '../../../src/domain/types/eth.js';
+import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import type { InstantPaymentParams } from '../../../src/domain/types/instant-payment.js';
 import { ZERO_ADDRESS } from '../../../src/domain/types/token.js';
+import { bullaInstantPaymentAbi } from '../../../src/infrastructure/abi/bulla-instant-payment.js';
 
 const SEPOLIA_CONTRACT = '0x1cD1A83C2965CB7aD55d60551877Eb390e9C3d7A' as EthAddress;
 const RECIPIENT = '0x1234567890abcdef1234567890abcdef12345678' as EthAddress;
@@ -29,6 +29,7 @@ const makeTestParams = (overrides: Partial<InstantPaymentParams> = {}): InstantP
 
 const TestRegistryService = Layer.succeed(RegistryService, {
     getInstantPaymentAddress: () => Effect.succeed(SEPOLIA_CONTRACT),
+    getInvoiceAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
 });
 
 /** Uses real viem encoding for golden-value tests. */

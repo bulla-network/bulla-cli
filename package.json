@@ -19,7 +19,7 @@
     },
     "scripts": {
         "dev": "tsx src/index.ts",
-        "build": "tsup",
+        "build": "tsc --noEmit && tsup",
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
@@ -47,6 +47,7 @@
         "@semantic-release/git": "^10.0.1",
         "@types/node": "^22.10.0",
         "prettier": "^3.4.0",
+        "prettier-plugin-organize-imports": "^4.3.0",
         "semantic-release": "^25.0.3",
         "tsup": "^8.3.0",
         "tsx": "^4.19.0",

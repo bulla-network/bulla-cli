@@ -1,7 +1,7 @@
-import type { UnsignedTransaction, TransactionResult } from '../../domain/types/transaction.js';
 import type { ChainId } from '../../domain/types/eth.js';
-import { formatTransactionAsJson, formatResultAsJson } from './json.js';
-import { formatTransactionAsHuman, formatResultAsHuman } from './human.js';
+import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
+import { formatResultAsHuman, formatTransactionAsHuman } from './human.js';
+import { formatResultAsJson, formatTransactionAsJson } from './json.js';
 
 export type OutputFormat = 'json' | 'human';
 

@@ -29,4 +29,27 @@ export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
 
         return Effect.succeed(chain.bullaInstantPayment);
     },
+    getInvoiceAddress: (chainId: ChainId) => {
+        if (!isChainId(chainId)) {
+            return Effect.fail(
+                new UnsupportedChainError({
+                    chainId,
+                    message: `Chain ${chainId} is not supported`,
+                }),
+            );
+        }
+
+        const address = REGISTRY[chainId]?.bullaInvoice;
+        if (!address) {
+            return Effect.fail(
+                new ContractNotFoundError({
+                    chainId,
+                    contractName: 'BullaInvoice',
+                    message: `No BullaInvoice contract found for chain ${chainId}`,
+                }),
+            );
+        }
+
+        return Effect.succeed(address);
+    },
 });

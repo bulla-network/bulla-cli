@@ -1,5 +1,5 @@
-import type { UnsignedTransaction, TransactionResult } from '../../domain/types/transaction.js';
 import { CHAIN_NAMES, type ChainId } from '../../domain/types/eth.js';
+import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
 
 export const formatTransactionAsHuman = (tx: UnsignedTransaction, chainId: ChainId): string => {
     const chainName = CHAIN_NAMES[chainId] ?? `Chain ${chainId}`;

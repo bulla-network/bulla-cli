@@ -1,12 +1,12 @@
 import { Effect } from 'effect';
-import type { ContractNotFoundError, SignerRequiredError, TransactionFailedError, UnsupportedChainError } from '../../domain/errors.js';
+import type { ContractNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
 import type { InstantPaymentParams } from '../../domain/types/instant-payment.js';
+import { formatTags } from '../../domain/types/instant-payment.js';
 import { isNativeToken } from '../../domain/types/token.js';
-import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
-import { formatTags } from '../../domain/validation/instant-payment.js';
+import type { UnsignedTransaction } from '../../domain/types/transaction.js';
 import { InstantPaymentEncoderService } from '../ports/instant-payment-encoder-port.js';
 import { RegistryService } from '../ports/registry-port.js';
-import { SignerService } from '../ports/signer-port.js';
+import { executeTransaction } from './transaction-utils.js';
 
 /**
  * Build mode: produces the unsigned transaction payload.
@@ -47,26 +47,4 @@ export const buildInstantPayment = (
  * Execute mode: signs and sends the transaction.
  * Requires a signer in addition to registry and blockchain services.
  */
-export const sendInstantPayment = (
-    params: InstantPaymentParams,
-): Effect.Effect<
-    TransactionResult,
-    ContractNotFoundError | UnsupportedChainError | TransactionFailedError | SignerRequiredError,
-    RegistryService | InstantPaymentEncoderService | SignerService
-> =>
-    Effect.gen(function* () {
-        const signer = yield* SignerService;
-        const tx = yield* buildInstantPayment(params);
-
-        const txHash = yield* signer.signAndSend(params.chainId, {
-            to: tx.to,
-            value: tx.value,
-            data: tx.data,
-        });
-
-        return {
-            txHash,
-            chainId: params.chainId,
-            blockNumber: 0, // Would need to wait for receipt in a real implementation
-        };
-    });
+export const sendInstantPayment = (params: InstantPaymentParams) => executeTransaction(buildInstantPayment, params);

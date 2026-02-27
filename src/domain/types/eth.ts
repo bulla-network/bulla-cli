@@ -1,7 +1,7 @@
 import { Brand } from 'effect';
 
 // -- EthAddress: a 0x-prefixed 42-character hex string
-export type EthAddress = string & Brand.Brand<'EthAddress'>;
+export type EthAddress = `0x${string}` & Brand.Brand<'EthAddress'>;
 
 const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 

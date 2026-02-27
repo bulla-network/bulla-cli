@@ -1,6 +1,6 @@
 import { Context, Effect } from 'effect';
-import type { EthAddress, Hex, ChainId } from '../../domain/types/eth.js';
 import type { SignerRequiredError } from '../../domain/errors.js';
+import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 
 export interface SignerService {
     readonly getAddress: () => Effect.Effect<EthAddress, SignerRequiredError>;

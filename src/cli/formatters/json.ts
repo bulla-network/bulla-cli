@@ -1,4 +1,4 @@
-import type { UnsignedTransaction, TransactionResult } from '../../domain/types/transaction.js';
+import type { TransactionResult, UnsignedTransaction } from '../../domain/types/transaction.js';
 
 export const formatTransactionAsJson = (tx: UnsignedTransaction): string =>
     JSON.stringify(
