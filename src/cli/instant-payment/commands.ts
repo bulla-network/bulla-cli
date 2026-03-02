@@ -1,6 +1,7 @@
 import { Command } from '@effect/cli';
 import { Console, Effect, Option } from 'effect';
-import { buildInstantPayment, sendInstantPayment } from '../../application/services/instant-payment-service.js';
+import { buildInstantPayment } from '../../application/services/instant-payment-service.js';
+import { sendTransaction } from '../../application/services/transaction-utils.js';
 import type { Hex } from '../../domain/types/eth.js';
 import { makeSignerLayer } from '../../infrastructure/layers.js';
 import { formatResult, formatTransaction, type OutputFormat } from '../formatters/index.js';
@@ -55,8 +56,9 @@ export const payExecuteCommand = Command.make(
     ({ chain, to, amount, token, description, tags, ipfsHash, format, privateKey, rpcUrl }) =>
         Effect.gen(function* () {
             const params = yield* validateInstantPaymentParams(chain, to, amount, token, description, tags, ipfsHash);
+            const tx = yield* buildInstantPayment(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendInstantPayment(params).pipe(Effect.provide(signerLayer));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Sign and send an instant payment transaction (requires private key)'));

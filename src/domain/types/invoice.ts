@@ -1,4 +1,4 @@
-import type { ChainId, EthAddress } from './eth.js';
+import type { ChainId, EthAddress, Hex } from './eth.js';
 
 // Enums from Types.sol
 export enum ClaimBinding {
@@ -84,7 +84,7 @@ export interface SetCallbackParams {
     chainId: ChainId;
     invoiceId: bigint;
     callbackContract: EthAddress;
-    callbackSelector: string; // bytes4 as hex string
+    callbackSelector: Hex; // bytes4 as hex string
 }
 
 // Purchase order state from on-chain invoice

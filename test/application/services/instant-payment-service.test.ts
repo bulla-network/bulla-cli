@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { InstantPaymentEncoderService } from '../../../src/application/ports/instant-payment-encoder-port.js';
 import { RegistryService } from '../../../src/application/ports/registry-port.js';
 import { SignerService } from '../../../src/application/ports/signer-port.js';
-import { buildInstantPayment, sendInstantPayment } from '../../../src/application/services/instant-payment-service.js';
+import { buildInstantPayment } from '../../../src/application/services/instant-payment-service.js';
+import { sendTransaction } from '../../../src/application/services/transaction-utils.js';
 import { SignerRequiredError } from '../../../src/domain/errors.js';
 import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import type { InstantPaymentParams } from '../../../src/domain/types/instant-payment.js';
@@ -62,8 +63,6 @@ const FailingSignerService = Layer.succeed(SignerService, {
 });
 
 const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder);
-const ExecuteTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder, TestSignerService);
-const FailingExecuteTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder, FailingSignerService);
 
 // --- Tests ---
 
@@ -115,10 +114,11 @@ describe('buildInstantPayment', () => {
     });
 });
 
-describe('sendInstantPayment', () => {
+describe('sendTransaction', () => {
     it('returns a transaction result with the tx hash from the signer', async () => {
         const params = makeTestParams();
-        const result = await Effect.runPromise(sendInstantPayment(params).pipe(Effect.provide(ExecuteTestLayers)));
+        const tx = await Effect.runPromise(buildInstantPayment(params).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(sendTransaction(params.chainId, tx).pipe(Effect.provide(TestSignerService)));
 
         expect(result.txHash).toBe('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
         expect(result.chainId).toBe(11155111);
@@ -126,7 +126,8 @@ describe('sendInstantPayment', () => {
 
     it('fails with SignerRequiredError when signer rejects', async () => {
         const params = makeTestParams();
-        const result = await Effect.runPromiseExit(sendInstantPayment(params).pipe(Effect.provide(FailingExecuteTestLayers)));
+        const tx = await Effect.runPromise(buildInstantPayment(params).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromiseExit(sendTransaction(params.chainId, tx).pipe(Effect.provide(FailingSignerService)));
 
         expect(result._tag).toBe('Failure');
     });

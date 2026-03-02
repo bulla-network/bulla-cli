@@ -78,9 +78,10 @@ function main() {
         const bullaContracts = network.contracts['bulla-contracts'];
         const instantPaymentAddr = bullaContracts?.['bullaInstantPayment'];
 
-        // Extract bullaInvoice address from bulla-contracts-v2 group
+        // Extract bullaInvoice and frendLendV2 addresses from bulla-contracts-v2 group
         const bullaContractsV2 = network.contracts['bulla-contracts-v2'];
         const invoiceAddr = bullaContractsV2?.['bullaInvoice'];
+        const frendLendV2Addr = bullaContractsV2?.['frendLendV2'];
 
         if (!instantPaymentAddr) {
             console.warn(`  Warning: Missing bullaInstantPayment for chain ${chainId} (${network.name}), skipping`);
@@ -88,7 +89,8 @@ function main() {
         }
 
         const invoicePart = invoiceAddr ? `, bullaInvoice: '${invoiceAddr}' as EthAddress` : '';
-        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress${invoicePart} },`);
+        const frendLendV2Part = frendLendV2Addr ? `, frendLendV2: '${frendLendV2Addr}' as EthAddress` : '';
+        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress${invoicePart}${frendLendV2Part} },`);
         subgraphs.push(`    ${chainId}: '${network.graphql}',`);
         chainNames.push(`    ${chainId}: '${network.name}',`);
     }
@@ -102,6 +104,7 @@ import type { EthAddress, ChainId } from '../domain/types/eth.js';
 export interface ChainContracts {
     readonly bullaInstantPayment: EthAddress;
     readonly bullaInvoice?: EthAddress;
+    readonly frendLendV2?: EthAddress;
 }
 
 export const REGISTRY: Record<ChainId, ChainContracts> = {

@@ -1,6 +1,6 @@
 import { Either } from 'effect';
-import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
-import { InvalidBindingError, InvalidCallbackSelectorError } from '../../domain/errors.js';
+import type { InvalidAddressError, InvalidAmountError, InvalidCallbackSelectorError, InvalidChainError } from '../../domain/errors.js';
+import { InvalidBindingError } from '../../domain/errors.js';
 import type {
     AcceptPurchaseOrderParams,
     CancelInvoiceParams,
@@ -11,7 +11,13 @@ import type {
     SetCallbackParams,
     UpdateBindingParams,
 } from '../../domain/types/invoice.js';
-import { validateAddress, validateAmount, validateAmountOrZero, validateChainId } from '../../domain/validation/eth.js';
+import {
+    validateAddress,
+    validateAmount,
+    validateAmountOrZero,
+    validateCallbackSelector,
+    validateChainId,
+} from '../../domain/validation/eth.js';
 
 type ValidationError = InvalidChainError | InvalidAddressError | InvalidAmountError | InvalidBindingError | InvalidCallbackSelectorError;
 
@@ -22,16 +28,6 @@ const validateBinding = (binding: number): Either.Either<ClaimBinding, InvalidBi
               new InvalidBindingError({
                   binding,
                   message: `Invalid binding value: ${binding}. Must be 0 (Unbound), 1 (BindingPending), or 2 (Bound)`,
-              }),
-          );
-
-const validateCallbackSelector = (selector: string): Either.Either<string, InvalidCallbackSelectorError> =>
-    /^0x[0-9a-fA-F]{8}$/.test(selector)
-        ? Either.right(selector)
-        : Either.left(
-              new InvalidCallbackSelectorError({
-                  selector,
-                  message: `Invalid callback selector: ${selector}. Must be a bytes4 hex string (e.g., 0x12345678)`,
               }),
           );
 

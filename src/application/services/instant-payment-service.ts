@@ -6,7 +6,6 @@ import { isNativeToken } from '../../domain/types/token.js';
 import type { UnsignedTransaction } from '../../domain/types/transaction.js';
 import { InstantPaymentEncoderService } from '../ports/instant-payment-encoder-port.js';
 import { RegistryService } from '../ports/registry-port.js';
-import { executeTransaction } from './transaction-utils.js';
 
 /**
  * Build mode: produces the unsigned transaction payload.
@@ -43,8 +42,3 @@ export const buildInstantPayment = (
         };
     });
 
-/**
- * Execute mode: signs and sends the transaction.
- * Requires a signer in addition to registry and blockchain services.
- */
-export const sendInstantPayment = (params: InstantPaymentParams) => executeTransaction(buildInstantPayment, params);

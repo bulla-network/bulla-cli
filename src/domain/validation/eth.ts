@@ -1,6 +1,6 @@
 import { Either } from 'effect';
-import { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../errors.js';
-import { isChainId, type ChainId, type EthAddress } from '../types/eth.js';
+import { InvalidAddressError, InvalidAmountError, InvalidCallbackSelectorError, InvalidChainError } from '../errors.js';
+import { isChainId, type ChainId, type EthAddress, type Hex } from '../types/eth.js';
 
 export const validateChainId = (chain: number): Either.Either<ChainId, InvalidChainError> =>
     isChainId(chain)
@@ -39,3 +39,13 @@ export const validateAmountOrZero = (input: string): Either.Either<bigint, Inval
         return Either.left(new InvalidAmountError({ amount: input, message: `Invalid amount: ${input}` }));
     }
 };
+
+export const validateCallbackSelector = (selector: string): Either.Either<Hex, InvalidCallbackSelectorError> =>
+    /^0x[0-9a-fA-F]{8}$/.test(selector)
+        ? Either.right(selector as Hex)
+        : Either.left(
+              new InvalidCallbackSelectorError({
+                  selector,
+                  message: `Invalid callback selector: ${selector}. Must be a bytes4 hex string (e.g., 0x12345678)`,
+              }),
+          );
