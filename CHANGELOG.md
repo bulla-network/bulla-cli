@@ -1,3 +1,16 @@
+## [0.0.4](https://github.com/bulla-network/bulla-cli/compare/v0.0.3...v0.0.4) (2026-03-02)
+
+
+### Bug Fixes
+
+* address PR review feedback for FrendLend commands ([5f5dede](https://github.com/bulla-network/bulla-cli/commit/5f5dedea194f282ba9b7bb84e94c2c34d75a2db0))
+
+
+### Features
+
+* add BullaFrendLend commands to CLI ([e34ef7a](https://github.com/bulla-network/bulla-cli/commit/e34ef7a9149555a9ba11ea32c504c06d6a8a1217))
+* add coverage tools ([daa423b](https://github.com/bulla-network/bulla-cli/commit/daa423b03b4107b6a2d6b8105540ee78555e1727))
+
 ## [0.0.3](https://github.com/bulla-network/bulla-cli/compare/v0.0.2...v0.0.3) (2026-02-27)
 
 
