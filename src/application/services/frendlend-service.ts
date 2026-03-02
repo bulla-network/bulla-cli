@@ -11,7 +11,6 @@ import type {
 import type { UnsignedTransaction } from '../../domain/types/transaction.js';
 import { FrendLendEncoderService } from '../ports/frendlend-encoder-port.js';
 import { RegistryService } from '../ports/registry-port.js';
-import { executeTransaction } from './transaction-utils.js';
 
 /**
  * Build mode: produces unsigned transaction for offerLoan.
@@ -165,23 +164,3 @@ export const buildSetPaidLoanCallback = (
         };
     });
 
-/** Execute mode: signs and sends offerLoan transaction. */
-export const sendOfferLoan = (params: OfferLoanParams) => executeTransaction(buildOfferLoan, params);
-
-/** Execute mode: signs and sends rejectLoanOffer transaction. */
-export const sendRejectLoanOffer = (params: RejectLoanOfferParams) => executeTransaction(buildRejectLoanOffer, params);
-
-/** Execute mode: signs and sends acceptLoan transaction. */
-export const sendAcceptLoan = (params: AcceptLoanParams) => executeTransaction(buildAcceptLoan, params);
-
-/** Execute mode: signs and sends payLoan transaction. */
-export const sendPayLoan = (params: PayLoanParams) => executeTransaction(buildPayLoan, params);
-
-/** Execute mode: signs and sends impairLoan transaction. */
-export const sendImpairLoan = (params: LoanOperationParams) => executeTransaction(buildImpairLoan, params);
-
-/** Execute mode: signs and sends markLoanAsPaid transaction. */
-export const sendMarkLoanAsPaid = (params: LoanOperationParams) => executeTransaction(buildMarkLoanAsPaid, params);
-
-/** Execute mode: signs and sends setPaidLoanCallback transaction. */
-export const sendSetPaidLoanCallback = (params: SetLoanCallbackParams) => executeTransaction(buildSetPaidLoanCallback, params);
