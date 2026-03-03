@@ -96,6 +96,6 @@ export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
             );
         }
 
-        return Effect.succeed(address);
+        return Effect.void;
     },
 });

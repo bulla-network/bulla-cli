@@ -20,7 +20,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 catch: err => new Error(`Failed to read redemption queue address from pool ${poolAddress}: ${err}`),
             }).pipe(Effect.map(addr => addr.toLowerCase() as EthAddress)),
 
-        getQueuedRedemptionsForOwner: (queueAddress: EthAddress, owner: EthAddress) =>
+        getQueuedRedemptionForOwner: (queueAddress: EthAddress, owner: EthAddress) =>
             Effect.tryPromise({
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
@@ -31,6 +31,12 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                         args: [owner as `0x${string}`],
                     });
                 },
-                catch: err => new Error(`Failed to read queued redemptions for ${owner} from queue ${queueAddress}: ${err}`),
-            }),
+                catch: err => new Error(`Failed to read queued redemption for ${owner} from queue ${queueAddress}: ${err}`),
+            }).pipe(
+                Effect.flatMap(indexes =>
+                    indexes.length === 0
+                        ? Effect.fail(new Error(`No queued redemption found for ${owner} on queue ${queueAddress}`))
+                        : Effect.succeed(indexes[0]!),
+                ),
+            ),
     });

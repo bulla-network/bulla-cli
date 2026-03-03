@@ -449,16 +449,10 @@ const cancelRedemptionBuildCommand = Command.make(
         Effect.gen(function* () {
             const params = yield* validateCancelQueuedRedemptionParams(chain, poolAddress, owner);
             const readerLayer = makeFactoringReaderLayer(rpcUrl);
-            const txs = yield* buildCancelQueuedRedemption(params).pipe(Effect.provide(readerLayer));
-            if (txs.length === 0) {
-                yield* Console.log('No queued redemptions found for this owner.');
-                return;
-            }
-            for (const tx of txs) {
-                yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-            }
+            const tx = yield* buildCancelQueuedRedemption(params).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
         }),
-).pipe(Command.withDescription('Build unsigned cancelQueuedRedemption transactions (requires --rpc-url)'));
+).pipe(Command.withDescription('Build an unsigned cancelQueuedRedemption transaction (requires --rpc-url)'));
 
 const cancelRedemptionExecuteCommand = Command.make(
     'execute',
@@ -474,21 +468,15 @@ const cancelRedemptionExecuteCommand = Command.make(
         Effect.gen(function* () {
             const params = yield* validateCancelQueuedRedemptionParams(chain, poolAddress, owner);
             const readerLayer = makeFactoringReaderLayer(rpcUrl);
-            const txs = yield* buildCancelQueuedRedemption(params).pipe(Effect.provide(readerLayer));
-            if (txs.length === 0) {
-                yield* Console.log('No queued redemptions found for this owner.');
-                return;
-            }
+            const tx = yield* buildCancelQueuedRedemption(params).pipe(Effect.provide(readerLayer));
             const signerLayer = makeSignerLayer(privateKey as Hex, rpcUrl);
-            for (const tx of txs) {
-                const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
-                yield* Console.log(formatResult(result, format as OutputFormat));
-            }
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
+            yield* Console.log(formatResult(result, format as OutputFormat));
         }),
-).pipe(Command.withDescription('Sign and send cancelQueuedRedemption transactions (requires --rpc-url)'));
+).pipe(Command.withDescription('Sign and send a cancelQueuedRedemption transaction (requires --rpc-url)'));
 
 const cancelRedemptionCommand = Command.make('cancel-redemption', {}).pipe(
-    Command.withDescription('Cancel queued redemptions for an owner'),
+    Command.withDescription('Cancel a queued redemption for an owner'),
     Command.withSubcommands([cancelRedemptionBuildCommand, cancelRedemptionExecuteCommand]),
 );
 

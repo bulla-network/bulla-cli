@@ -115,7 +115,7 @@ const TestRegistryService = Layer.succeed(RegistryService, {
     getInstantPaymentAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
     getInvoiceAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
     getFrendLendAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
-    validateFactoringPool: (_chainId, address) => Effect.succeed(address),
+    validateFactoringPool: () => Effect.void,
 });
 
 const TestFactoringEncoder = Layer.succeed(FactoringEncoderService, {
@@ -195,17 +195,17 @@ const TestFactoringEncoder = Layer.succeed(FactoringEncoderService, {
 
 const TestReaderService = Layer.succeed(FactoringReaderService, {
     getRedemptionQueueAddress: () => Effect.succeed(QUEUE_ADDRESS),
-    getQueuedRedemptionsForOwner: () => Effect.succeed([1n, 3n]),
+    getQueuedRedemptionForOwner: () => Effect.succeed(1n),
 });
 
-const EmptyQueueReaderService = Layer.succeed(FactoringReaderService, {
+const NoQueueReaderService = Layer.succeed(FactoringReaderService, {
     getRedemptionQueueAddress: () => Effect.succeed(QUEUE_ADDRESS),
-    getQueuedRedemptionsForOwner: () => Effect.succeed([]),
+    getQueuedRedemptionForOwner: () => Effect.fail(new Error('No queued redemption found')),
 });
 
 const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestFactoringEncoder);
 const CancelTestLayers = Layer.mergeAll(TestRegistryService, TestFactoringEncoder, TestReaderService);
-const CancelEmptyTestLayers = Layer.mergeAll(TestRegistryService, TestFactoringEncoder, EmptyQueueReaderService);
+const CancelNoQueueTestLayers = Layer.mergeAll(TestRegistryService, TestFactoringEncoder, NoQueueReaderService);
 
 // --- Tests ---
 
@@ -388,45 +388,41 @@ describe('buildOfferLoan', () => {
 });
 
 describe('buildCancelQueuedRedemption', () => {
-    it('returns one unsigned transaction per queued redemption', async () => {
+    it('returns a single unsigned transaction', async () => {
         const params = makeCancelRedemptionParams();
         const result = await Effect.runPromise(buildCancelQueuedRedemption(params).pipe(Effect.provide(CancelTestLayers)));
 
-        expect(result).toHaveLength(2);
+        expect(result.to).toBe(QUEUE_ADDRESS);
+        expect(result.operation).toBe(0);
     });
 
     it('targets the queue address (not the pool)', async () => {
         const params = makeCancelRedemptionParams();
         const result = await Effect.runPromise(buildCancelQueuedRedemption(params).pipe(Effect.provide(CancelTestLayers)));
 
-        expect(result[0].to).toBe(QUEUE_ADDRESS);
-        expect(result[1].to).toBe(QUEUE_ADDRESS);
+        expect(result.to).toBe(QUEUE_ADDRESS);
     });
 
-    it('sets value to "0" and operation to 0 for each tx', async () => {
+    it('sets value to "0" and operation to 0', async () => {
         const params = makeCancelRedemptionParams();
         const result = await Effect.runPromise(buildCancelQueuedRedemption(params).pipe(Effect.provide(CancelTestLayers)));
 
-        for (const tx of result) {
-            expect(tx.value).toBe('0');
-            expect(tx.operation).toBe(0);
-        }
+        expect(result.value).toBe('0');
+        expect(result.operation).toBe(0);
     });
 
     it('encodes calldata with the cancelQueuedRedemption selector', async () => {
         const params = makeCancelRedemptionParams();
         const result = await Effect.runPromise(buildCancelQueuedRedemption(params).pipe(Effect.provide(CancelTestLayers)));
 
-        for (const tx of result) {
-            expect(tx.data).toMatch(/^0x[0-9a-f]{8}/);
-            expect(tx.data.length).toBeGreaterThan(10);
-        }
+        expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
+        expect(result.data.length).toBeGreaterThan(10);
     });
 
-    it('returns an empty array when no queued redemptions exist', async () => {
+    it('fails when no queued redemption exists', async () => {
         const params = makeCancelRedemptionParams();
-        const result = await Effect.runPromise(buildCancelQueuedRedemption(params).pipe(Effect.provide(CancelEmptyTestLayers)));
+        const exit = await Effect.runPromiseExit(buildCancelQueuedRedemption(params).pipe(Effect.provide(CancelNoQueueTestLayers)));
 
-        expect(result).toHaveLength(0);
+        expect(exit._tag).toBe('Failure');
     });
 });

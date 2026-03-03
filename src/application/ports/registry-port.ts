@@ -9,7 +9,7 @@ export interface RegistryService {
     readonly validateFactoringPool: (
         chainId: ChainId,
         address: EthAddress,
-    ) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
+    ) => Effect.Effect<void, ContractNotFoundError | UnsupportedChainError>;
 }
 
 export const RegistryService = Context.GenericTag<RegistryService>('RegistryService');

@@ -109,7 +109,7 @@ export const buildOfferLoan = (
 export const buildCancelQueuedRedemption = (
     params: CancelQueuedRedemptionParams,
 ): Effect.Effect<
-    readonly UnsignedTransaction[],
+    UnsignedTransaction,
     ContractNotFoundError | UnsupportedChainError | Error,
     RegistryService | FactoringEncoderService | FactoringReaderService
 > =>
@@ -121,17 +121,8 @@ export const buildCancelQueuedRedemption = (
         yield* registry.validateFactoringPool(params.chainId, params.poolAddress);
 
         const queueAddress = yield* reader.getRedemptionQueueAddress(params.poolAddress);
-        const queueIndexes = yield* reader.getQueuedRedemptionsForOwner(queueAddress, params.owner);
+        const queueIndex = yield* reader.getQueuedRedemptionForOwner(queueAddress, params.owner);
+        const data = yield* encoder.encodeCancelQueuedRedemption(queueIndex);
 
-        if (queueIndexes.length === 0) {
-            return [] as readonly UnsignedTransaction[];
-        }
-
-        const txs: UnsignedTransaction[] = [];
-        for (const queueIndex of queueIndexes) {
-            const data = yield* encoder.encodeCancelQueuedRedemption(queueIndex);
-            txs.push({ to: queueAddress, value: '0', data, operation: 0 as const });
-        }
-
-        return txs;
+        return { to: queueAddress, value: '0', data, operation: 0 as const };
     });
