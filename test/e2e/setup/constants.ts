@@ -20,4 +20,5 @@ export const CONTRACTS = {
     bullaInstantPayment: '0x1cD1A83C2965CB7aD55d60551877Eb390e9C3d7A' as `0x${string}`,
     bullaInvoice: '0xa2c4B7239A0d179A923751cC75277fe139AB092F' as `0x${string}`,
     frendLendV2: '0x4d6A66D32CF34270e4cc9C9F201CA4dB650Be3f2' as `0x${string}`,
+    factoringPool: '0xa5e94f122d421c9579a5cb1e687f55e109ba270b' as `0x${string}`,
 };

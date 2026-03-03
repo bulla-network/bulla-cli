@@ -1,5 +1,6 @@
 import { Layer } from 'effect';
 import type { Hex } from '../domain/types/eth.js';
+import { ViemFactoringEncoderLive } from './encoding/viem-factoring-encoder.js';
 import { ViemFrendLendEncoderLive } from './encoding/viem-frendlend-encoder.js';
 import { ViemInstantPaymentEncoderLive } from './encoding/viem-instant-payment-encoder.js';
 import { ViemInvoiceEncoderLive } from './encoding/viem-invoice-encoder.js';
@@ -14,6 +15,7 @@ export const BuildModeLayers = Layer.mergeAll(
     ViemInstantPaymentEncoderLive,
     ViemInvoiceEncoderLive,
     ViemFrendLendEncoderLive,
+    ViemFactoringEncoderLive,
 );
 
 /** Additive signer layer for execute mode: requires a private key. */

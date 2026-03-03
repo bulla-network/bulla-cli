@@ -16,7 +16,7 @@ const LOAN_OFFERED_TOPIC = keccak256(
 export async function getNewTokenIdFromReceipt(rpcUrl: string, txHash: `0x${string}`): Promise<bigint> {
     const client = createPublicClient({ transport: http(rpcUrl) });
 
-    const receipt = await client.getTransactionReceipt({ hash: txHash });
+    const receipt = await client.waitForTransactionReceipt({ hash: txHash });
 
     for (const log of receipt.logs) {
         try {
@@ -43,7 +43,7 @@ export async function getNewTokenIdFromReceipt(rpcUrl: string, txHash: `0x${stri
 export async function getOfferIdFromReceipt(rpcUrl: string, txHash: `0x${string}`): Promise<bigint> {
     const client = createPublicClient({ transport: http(rpcUrl) });
 
-    const receipt = await client.getTransactionReceipt({ hash: txHash });
+    const receipt = await client.waitForTransactionReceipt({ hash: txHash });
 
     for (const log of receipt.logs) {
         if (log.topics[0] === LOAN_OFFERED_TOPIC && log.topics[1]) {
