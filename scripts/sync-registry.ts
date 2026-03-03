@@ -1,23 +1,24 @@
 /**
  * sync-registry.ts
  *
- * Reads registry.json from bulla-registry and generates a typed TypeScript module
- * at src/generated/registry.ts. The generated file is committed to the repo.
+ * Fetches registry.json from the bulla-registry GitHub repo and generates a typed
+ * TypeScript module at src/generated/registry.ts. The generated file is committed to the repo.
  *
- * Also reads factoring-contracts/address_config.json for factoring pool addresses.
+ * Factoring pool addresses are read from the "factoring-contracts" group within registry.json.
  *
  * Usage:
  *   yarn sync-registry
  *
- * Sources (tried in order):
- *   1. Local sibling: ../bulla-registry/registry.json (relative to repo root)
- *   2. Environment variable: BULLA_REGISTRY_PATH
+ * Source:
+ *   https://github.com/bulla-network/bulla-registry/blob/main/registry.json
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SUPPORTED_CHAIN_IDS } from '../src/domain/types/eth.js';
+
+const REGISTRY_URL = 'https://raw.githubusercontent.com/bulla-network/bulla-registry/main/registry.json';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
@@ -34,71 +35,24 @@ interface Registry {
     networks: Record<string, RegistryNetwork>;
 }
 
-interface FactoringAddressConfig {
-    repo: string;
-    contracts: Record<string, Record<string, string>>;
-}
-
-function findRegistryPath(): string {
-    if (process.env.BULLA_REGISTRY_PATH) {
-        return process.env.BULLA_REGISTRY_PATH;
-    }
-
-    // Try common sibling locations
-    const candidates = [
-        resolve(projectRoot, '..', 'bulla-registry', 'registry.json'),
-        resolve(projectRoot, '..', '..', 'bulla-registry', 'registry.json'),
-    ];
-
-    for (const candidate of candidates) {
-        try {
-            readFileSync(candidate, 'utf-8');
-            return candidate;
-        } catch {
-            // continue
-        }
-    }
-
-    throw new Error(
-        `Could not find registry.json. Tried:\n${candidates.map(c => `  - ${c}`).join('\n')}\nSet BULLA_REGISTRY_PATH to override.`,
-    );
-}
-
-function findFactoringConfigPath(registryPath: string): string | undefined {
-    // Factoring config lives alongside registry.json in the bulla-registry repo
-    const registryDir = dirname(registryPath);
-    const candidates = [
-        resolve(registryDir, 'factoring-contracts', 'address_config.json'),
-        resolve(registryDir, '..', 'bulla-registry', 'factoring-contracts', 'address_config.json'),
-    ];
-
-    for (const candidate of candidates) {
-        try {
-            readFileSync(candidate, 'utf-8');
-            return candidate;
-        } catch {
-            // continue
-        }
-    }
-    return undefined;
-}
-
 /** Parse pool name from key like "bullaFactoringV2_1_TCS" → "TCS", "bullaFactoringV1_TARAM" → "TARAM" */
 function parsePoolName(key: string): string {
     const parts = key.split('_');
     return parts[parts.length - 1]!;
 }
 
-function main() {
-    const registryPath = findRegistryPath();
-    console.log(`Reading registry from: ${registryPath}`);
-
-    const raw = readFileSync(registryPath, 'utf-8');
-    const registry: Registry = JSON.parse(raw);
+async function main() {
+    console.log(`Fetching registry from: ${REGISTRY_URL}`);
+    const response = await fetch(REGISTRY_URL);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch registry: ${response.status} ${response.statusText}`);
+    }
+    const registry: Registry = (await response.json()) as Registry;
 
     const contracts: string[] = [];
     const subgraphs: string[] = [];
     const chainNames: string[] = [];
+    const factoringPools: string[] = [];
 
     for (const chainIdStr of Object.keys(registry.networks)) {
         const chainId = Number(chainIdStr);
@@ -125,58 +79,28 @@ function main() {
         contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress${invoicePart}${frendLendV2Part} },`);
         subgraphs.push(`    ${chainId}: '${network.graphql}',`);
         chainNames.push(`    ${chainId}: '${network.name}',`);
-    }
 
-    // Read factoring pool addresses
-    const factoringConfigPath = findFactoringConfigPath(registryPath);
-    const factoringPools: string[] = [];
-
-    if (factoringConfigPath) {
-        console.log(`Reading factoring config from: ${factoringConfigPath}`);
-        const factoringRaw = readFileSync(factoringConfigPath, 'utf-8');
-        const factoringConfig: FactoringAddressConfig = JSON.parse(factoringRaw);
-
-        for (const [chainIdStr, pools] of Object.entries(factoringConfig.contracts)) {
-            const chainId = Number(chainIdStr);
-            if (!(SUPPORTED_CHAIN_IDS as readonly number[]).includes(chainId)) continue;
-
+        // Extract factoring pool addresses from factoring-contracts group
+        const factoringContracts = network.contracts['factoring-contracts'];
+        if (factoringContracts) {
             const poolEntries: string[] = [];
-            for (const [key, address] of Object.entries(pools)) {
+            for (const [key, address] of Object.entries(factoringContracts)) {
                 const name = parsePoolName(key);
                 poolEntries.push(`{ name: '${name}', address: '${address}' as EthAddress }`);
             }
-
             if (poolEntries.length > 0) {
                 factoringPools.push(`    ${chainId}: [${poolEntries.join(', ')}],`);
             }
         }
-    } else {
-        console.warn('  Warning: Factoring address_config.json not found, skipping factoring pools');
     }
 
-    const factoringPoolsSection =
+    const factoringPoolsBlock =
         factoringPools.length > 0
-            ? `
-export interface FactoringPool {
-    readonly name: string;
-    readonly address: EthAddress;
-}
-
-export const FACTORING_POOLS: Partial<Record<ChainId, readonly FactoringPool[]>> = {
-${factoringPools.join('\n')}
-};
-`
-            : `
-export interface FactoringPool {
-    readonly name: string;
-    readonly address: EthAddress;
-}
-
-export const FACTORING_POOLS: Partial<Record<ChainId, readonly FactoringPool[]>> = {};
-`;
+            ? `{\n${factoringPools.join('\n')}\n}`
+            : '{}';
 
     const output = `// AUTO-GENERATED by scripts/sync-registry.ts — do not edit manually.
-// Source: ${registryPath}
+// Source: ${REGISTRY_URL}
 // Generated at: ${new Date().toISOString()}
 
 import type { EthAddress, ChainId } from '../domain/types/eth.js';
@@ -198,7 +122,14 @@ ${subgraphs.join('\n')}
 export const CHAIN_DISPLAY_NAMES: Record<ChainId, string> = {
 ${chainNames.join('\n')}
 };
-${factoringPoolsSection}`;
+
+export interface FactoringPool {
+    readonly name: string;
+    readonly address: EthAddress;
+}
+
+export const FACTORING_POOLS: Partial<Record<ChainId, readonly FactoringPool[]>> = ${factoringPoolsBlock};
+`;
 
     const outDir = resolve(projectRoot, 'src', 'generated');
     mkdirSync(outDir, { recursive: true });
