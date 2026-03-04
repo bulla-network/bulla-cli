@@ -1,9 +1,9 @@
 import { Effect, Layer } from 'effect';
 import { RegistryService } from '../../application/ports/registry-port.js';
 import { ContractNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
-import type { ChainId } from '../../domain/types/eth.js';
+import type { ChainId, EthAddress } from '../../domain/types/eth.js';
 import { isChainId } from '../../domain/types/eth.js';
-import { REGISTRY } from '../../generated/registry.js';
+import { FACTORING_POOLS, REGISTRY } from '../../generated/registry.js';
 
 export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
     getInstantPaymentAddress: (chainId: ChainId) => {
@@ -74,5 +74,28 @@ export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
         }
 
         return Effect.succeed(address);
+    },
+    validateFactoringPool: (chainId: ChainId, address: EthAddress) => {
+        if (!isChainId(chainId)) {
+            return Effect.fail(
+                new UnsupportedChainError({
+                    chainId,
+                    message: `Chain ${chainId} is not supported`,
+                }),
+            );
+        }
+
+        const pools = FACTORING_POOLS[chainId];
+        if (!pools || !pools.some(p => p.address.toLowerCase() === address.toLowerCase())) {
+            return Effect.fail(
+                new ContractNotFoundError({
+                    chainId,
+                    contractName: 'BullaFactoring',
+                    message: `No factoring pool found at ${address} for chain ${chainId}`,
+                }),
+            );
+        }
+
+        return Effect.void;
     },
 });

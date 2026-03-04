@@ -2,6 +2,7 @@ import { Command } from '@effect/cli';
 import { NodeContext, NodeRuntime } from '@effect/platform-node';
 import { Console, Effect, Layer } from 'effect';
 import { createRequire } from 'node:module';
+import { factoringCommand } from './cli/commands/factoring.js';
 import { frendlendCommand } from './cli/commands/frendlend.js';
 import { invoiceCommand } from './cli/commands/invoice.js';
 import { payCommand } from './cli/instant-payment/commands.js';
@@ -12,7 +13,7 @@ const { version } = require('../package.json') as { version: string };
 
 const bullaCommand = Command.make('bulla', {}).pipe(
     Command.withDescription('Bulla Protocol CLI — build and send Bulla related transactions'),
-    Command.withSubcommands([payCommand, invoiceCommand, frendlendCommand]),
+    Command.withSubcommands([payCommand, invoiceCommand, frendlendCommand, factoringCommand]),
 );
 
 const cli = Command.run(bullaCommand, {
