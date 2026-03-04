@@ -1,3 +1,15 @@
+## [0.0.5](https://github.com/bulla-network/bulla-cli/compare/v0.0.4...v0.0.5) (2026-03-04)
+
+
+### Bug Fixes
+
+* fetch registry from GitHub instead of local filesystem ([04c6b9e](https://github.com/bulla-network/bulla-cli/commit/04c6b9e16c6649bbdf7a640dc09c3c8eb55757e7))
+
+
+### Features
+
+* add BullaFactoringV2_1 commands to CLI ([3e392ec](https://github.com/bulla-network/bulla-cli/commit/3e392ec7a57e3fd65b5c2e7671cc33773f7ac59b))
+
 ## [0.0.4](https://github.com/bulla-network/bulla-cli/compare/v0.0.3...v0.0.4) (2026-03-02)
 
 
