@@ -124,6 +124,34 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                             requestedByCreditor: result.requestedByCreditor,
                         } satisfies LoanOfferOnChain;
                     }),
+                getTotalAmountDue: (chainId: ChainId, claimId: bigint) =>
+                    Effect.gen(function* () {
+                        const contractAddress = yield* registry.getFrendLendAddress(chainId);
+                        const chain = chainMap[chainId];
+
+                        const client = createPublicClient({
+                            chain,
+                            transport: http(rpcUrl),
+                        });
+
+                        const result = yield* Effect.tryPromise({
+                            try: () =>
+                                client.readContract({
+                                    address: contractAddress as `0x${string}`,
+                                    abi: bullaFrendLendV2Abi,
+                                    functionName: 'getTotalAmountDue',
+                                    args: [claimId],
+                                }),
+                            catch: err =>
+                                new LoanNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Failed to read total amount due for claim ${claimId} on chain ${chainId}: ${err}`,
+                                }),
+                        });
+
+                        return { remainingPrincipal: result[0], grossInterest: result[1] };
+                    }),
             };
         }),
     );

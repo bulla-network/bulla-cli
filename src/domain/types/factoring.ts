@@ -64,3 +64,56 @@ export interface CancelQueuedRedemptionParams {
     poolAddress: EthAddress;
     owner: EthAddress;
 }
+
+// -- View function result types --
+
+// Result of getFundInfo()
+export interface FundInfo {
+    totalAssets: bigint;
+    totalSupply: bigint;
+    adminFeeBalance: bigint;
+    protocolFeeBalance: bigint;
+}
+
+// Result of viewPoolStatus(offset, limit)
+export interface PoolStatus {
+    impairedInvoiceIds: readonly bigint[];
+    hasMore: boolean;
+}
+
+// Result of previewUnfactor(invoiceId) — int256 can be negative
+export interface UnfactorPreview {
+    totalRefundOrPaymentAmount: bigint;
+}
+
+// Result of calculateKickbackAmount(invoiceId)
+export interface KickbackInfo {
+    kickbackAmount: bigint;
+    trueInterest: bigint;
+    trueSpreadAmount: bigint;
+    trueAdminFee: bigint;
+}
+
+// Result of calculateTargetFees(invoiceId, factorerUpfrontBps)
+export interface TargetFeeBreakdown {
+    fundedAmountGross: bigint;
+    adminFee: bigint;
+    targetInterest: bigint;
+    targetSpreadAmount: bigint;
+    protocolFee: bigint;
+    netFundedAmount: bigint;
+}
+
+// Result of getQueueStats()
+export interface QueueStats {
+    queueLength: bigint;
+    totalShares: bigint;
+    totalAssets: bigint;
+}
+
+// Result of getNextRedemption() / getQueuedRedemption(index)
+export interface QueuedRedemption {
+    owner: EthAddress;
+    shares: bigint;
+    assets: bigint;
+}

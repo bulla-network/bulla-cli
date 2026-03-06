@@ -1,11 +1,16 @@
-import { Either } from 'effect';
+import { Either, Option } from 'effect';
 import { InvalidAddressError, InvalidAmountError, InvalidCallbackSelectorError, InvalidChainError } from '../errors.js';
 import { isChainId, type ChainId, type EthAddress, type Hex } from '../types/eth.js';
 
-export const validateChainId = (chain: number): Either.Either<ChainId, InvalidChainError> =>
-    isChainId(chain)
-        ? Either.right(chain)
-        : Either.left(new InvalidChainError({ chainId: chain, message: `Unsupported chain ID: ${chain}` }));
+export const validateChainId = (chain: number | Option.Option<number>): Either.Either<ChainId, InvalidChainError> => {
+    const value = typeof chain === 'number' ? chain : Option.getOrUndefined(chain);
+    if (value === undefined) {
+        return Either.left(new InvalidChainError({ chainId: 0, message: 'Chain ID is required. Use --chain or --rpc-url to specify it.' }));
+    }
+    return isChainId(value)
+        ? Either.right(value)
+        : Either.left(new InvalidChainError({ chainId: value, message: `Unsupported chain ID: ${value}` }));
+};
 
 const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 

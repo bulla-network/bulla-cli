@@ -75,6 +75,35 @@ export const makeInvoiceReaderLayer = (rpcUrl: string) =>
                             },
                         } satisfies InvoiceOnChain;
                     }),
+
+                getTotalAmountNeededForPurchaseOrderDeposit: (chainId: ChainId, claimId: bigint) =>
+                    Effect.gen(function* () {
+                        const contractAddress = yield* registry.getInvoiceAddress(chainId);
+                        const chain = chainMap[chainId];
+
+                        const client = createPublicClient({
+                            chain,
+                            transport: http(rpcUrl),
+                        });
+
+                        const { result } = yield* Effect.tryPromise({
+                            try: () =>
+                                client.simulateContract({
+                                    address: contractAddress as `0x${string}`,
+                                    abi: bullaInvoiceAbi,
+                                    functionName: 'getTotalAmountNeededForPurchaseOrderDeposit',
+                                    args: [claimId],
+                                }),
+                            catch: err =>
+                                new InvoiceNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Failed to simulate getTotalAmountNeededForPurchaseOrderDeposit for claim ${claimId} on chain ${chainId}: ${err}`,
+                                }),
+                        });
+
+                        return result;
+                    }),
             };
         }),
     );

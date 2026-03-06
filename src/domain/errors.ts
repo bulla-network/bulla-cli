@@ -56,3 +56,8 @@ export class LoanNotFoundError extends Data.TaggedError('LoanNotFoundError')<{
     readonly claimId: bigint;
     readonly message: string;
 }> {}
+
+export class RpcConnectionError extends Data.TaggedError('RpcConnectionError')<{
+    readonly rpcUrl: string;
+    readonly message: string;
+}> {}

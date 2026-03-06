@@ -1,11 +1,11 @@
-import { Either } from 'effect';
+import { Either, Option } from 'effect';
 import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
 import type { InstantPaymentParams } from '../../domain/types/instant-payment.js';
 import { validateAddress, validateAmount, validateChainId } from '../../domain/validation/eth.js';
 
 /** Validate and parse raw CLI inputs into InstantPaymentParams (pure). */
 export const validateInstantPaymentParams = (
-    chain: number,
+    chain: Option.Option<number>,
     to: string,
     amount: string,
     token: string,

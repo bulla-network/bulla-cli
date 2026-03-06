@@ -1,17 +1,580 @@
-/** RedemptionQueue ABI — declared `as const` for viem type inference. Only includes functions used by the CLI. */
 export const redemptionQueueAbi = [
     {
-        inputs: [{ internalType: 'uint256', name: 'queueIndex', type: 'uint256' }],
-        name: 'cancelQueuedRedemption',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
+        "type": "constructor",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "_factoringContract",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "nonpayable"
     },
     {
-        inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
-        name: 'getQueuedRedemptionsForOwner',
-        outputs: [{ internalType: 'uint256[]', name: 'queueIndexes', type: 'uint256[]' }],
-        stateMutability: 'view',
-        type: 'function',
+        "type": "function",
+        "name": "cancelQueuedRedemption",
+        "inputs": [
+            {
+                "name": "queueIndex",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
     },
+    {
+        "type": "function",
+        "name": "clearQueue",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "compactQueue",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "factoringContract",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getMaxQueueSize",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getNextRedemption",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "redemption",
+                "type": "tuple",
+                "internalType": "struct IRedemptionQueue.QueuedRedemption",
+                "components": [
+                    {
+                        "name": "owner",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "receiver",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "shares",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    },
+                    {
+                        "name": "assets",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getQueueLength",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "queueLength",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getQueueStats",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "queueLength",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "totalShares",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "totalAssets",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getQueuedRedemption",
+        "inputs": [
+            {
+                "name": "queueIndex",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "redemption",
+                "type": "tuple",
+                "internalType": "struct IRedemptionQueue.QueuedRedemption",
+                "components": [
+                    {
+                        "name": "owner",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "receiver",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "shares",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    },
+                    {
+                        "name": "assets",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getQueuedRedemptionsForOwner",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "queueIndexes",
+                "type": "uint256[]",
+                "internalType": "uint256[]"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getTotalQueuedForOwner",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "totalShares",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "totalAssets",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "isQueueEmpty",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "isEmpty",
+                "type": "bool",
+                "internalType": "bool"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "maxQueueSize",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "owner",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "queueRedemption",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "receiver",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "shares",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "assets",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "queueIndex",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "removeAmountFromFirstOwner",
+        "inputs": [
+            {
+                "name": "amount",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "nextRedemption",
+                "type": "tuple",
+                "internalType": "struct IRedemptionQueue.QueuedRedemption",
+                "components": [
+                    {
+                        "name": "owner",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "receiver",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "shares",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    },
+                    {
+                        "name": "assets",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "renounceOwnership",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setFactoringContract",
+        "inputs": [
+            {
+                "name": "_factoringContract",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setMaxQueueSize",
+        "inputs": [
+            {
+                "name": "_maxQueueSize",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "transferOwnership",
+        "inputs": [
+            {
+                "name": "newOwner",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "event",
+        "name": "OwnershipTransferred",
+        "inputs": [
+            {
+                "name": "previousOwner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "newOwner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "RedemptionCancelled",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "queueIndex",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "RedemptionProcessed",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "receiver",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "shares",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            },
+            {
+                "name": "assets",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            },
+            {
+                "name": "queueIndex",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "RedemptionQueued",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "receiver",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "shares",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            },
+            {
+                "name": "assets",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            },
+            {
+                "name": "queueIndex",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "error",
+        "name": "AmountExceedsQueuedAssets",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "AmountExceedsQueuedShares",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "InvalidOwner",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "InvalidQueueIndex",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "InvalidReceiver",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "InvalidRedemption",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "InvalidRedemptionType",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "NotAuthorized",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "OnlyFactoringContract",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "OwnableInvalidOwner",
+        "inputs": [
+            {
+                "name": "owner",
+                "type": "address",
+                "internalType": "address"
+            }
+        ]
+    },
+    {
+        "type": "error",
+        "name": "OwnableUnauthorizedAccount",
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address",
+                "internalType": "address"
+            }
+        ]
+    },
+    {
+        "type": "error",
+        "name": "QueueEmpty",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "RedemptionAlreadyCancelled",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "RedemptionQueueFull",
+        "inputs": []
+    }
 ] as const;

@@ -1,7 +1,8 @@
 import { Command } from '@effect/cli';
 import { factoringCommands } from '../factoring/commands.js';
+import { factoringViewCommands, queueCommand } from '../factoring/view-commands.js';
 
 export const factoringCommand = Command.make('factoring', {}).pipe(
     Command.withDescription('Factoring pool operations'),
-    Command.withSubcommands(factoringCommands),
+    Command.withSubcommands([...factoringCommands, ...factoringViewCommands, queueCommand]),
 );

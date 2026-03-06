@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Either, Option } from 'effect';
 import type { InvalidAddressError, InvalidAmountError, InvalidCallbackSelectorError, InvalidChainError } from '../../domain/errors.js';
 import { InvalidBindingError } from '../../domain/errors.js';
 import type {
@@ -33,7 +33,7 @@ const validateBinding = (binding: number): Either.Either<ClaimBinding, InvalidBi
 
 /** Validate and parse raw CLI inputs into CreateInvoiceParams (pure). */
 export const validateCreateInvoiceParams = (
-    chain: number,
+    chain: Option.Option<number>,
     debtor: string,
     creditor: string,
     claimAmount: string,
@@ -69,7 +69,7 @@ export const validateCreateInvoiceParams = (
 
 /** Validate and parse raw CLI inputs into PayInvoiceParams (pure). */
 export const validatePayInvoiceParams = (
-    chain: number,
+    chain: Option.Option<number>,
     claimId: number,
     paymentAmount: string,
 ): Either.Either<PayInvoiceParams, ValidationError> =>
@@ -83,7 +83,7 @@ export const validatePayInvoiceParams = (
 
 /** Validate and parse raw CLI inputs into CancelInvoiceParams (pure). */
 export const validateCancelInvoiceParams = (
-    chain: number,
+    chain: Option.Option<number>,
     claimId: number,
     note: string,
 ): Either.Either<CancelInvoiceParams, InvalidChainError> =>
@@ -96,20 +96,20 @@ export const validateCancelInvoiceParams = (
     });
 
 /** Validate and parse raw CLI inputs into InvoiceOperationParams for impair (pure). */
-export const validateImpairInvoiceParams = (chain: number, claimId: number): Either.Either<InvoiceOperationParams, InvalidChainError> =>
+export const validateImpairInvoiceParams = (chain: Option.Option<number>, claimId: number): Either.Either<InvoiceOperationParams, InvalidChainError> =>
     Either.gen(function* () {
         return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });
 
 /** Validate and parse raw CLI inputs into InvoiceOperationParams for mark-paid (pure). */
-export const validateMarkInvoiceAsPaidParams = (chain: number, claimId: number): Either.Either<InvoiceOperationParams, InvalidChainError> =>
+export const validateMarkInvoiceAsPaidParams = (chain: Option.Option<number>, claimId: number): Either.Either<InvoiceOperationParams, InvalidChainError> =>
     Either.gen(function* () {
         return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });
 
 /** Validate and parse raw CLI inputs into UpdateBindingParams (pure). */
 export const validateUpdateBindingParams = (
-    chain: number,
+    chain: Option.Option<number>,
     claimId: number,
     binding: number,
 ): Either.Either<UpdateBindingParams, InvalidChainError | InvalidBindingError> =>
@@ -123,7 +123,7 @@ export const validateUpdateBindingParams = (
 
 /** Validate and parse raw CLI inputs into SetCallbackParams (pure). */
 export const validateSetPaidInvoiceCallbackParams = (
-    chain: number,
+    chain: Option.Option<number>,
     invoiceId: number,
     callbackContract: string,
     callbackSelector: string,
@@ -139,7 +139,7 @@ export const validateSetPaidInvoiceCallbackParams = (
 
 /** Validate and parse raw CLI inputs into AcceptPurchaseOrderParams (pure). */
 export const validateAcceptPurchaseOrderParams = (
-    chain: number,
+    chain: Option.Option<number>,
     claimId: number,
     depositAmount: string,
 ): Either.Either<AcceptPurchaseOrderParams, InvalidChainError | InvalidAmountError> =>
@@ -153,7 +153,7 @@ export const validateAcceptPurchaseOrderParams = (
 
 /** Validate and parse raw CLI inputs into InvoiceOperationParams for deliver-po (pure). */
 export const validateDeliverPurchaseOrderParams = (
-    chain: number,
+    chain: Option.Option<number>,
     claimId: number,
 ): Either.Either<InvoiceOperationParams, InvalidChainError> =>
     Either.gen(function* () {
