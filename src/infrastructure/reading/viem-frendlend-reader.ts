@@ -1,5 +1,5 @@
 import { Effect, Layer } from 'effect';
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, zeroAddress } from 'viem';
 import * as chains from 'viem/chains';
 import { FrendLendReaderService } from '../../application/ports/frendlend-reader-port.js';
 import { RegistryService } from '../../application/ports/registry-port.js';
@@ -54,6 +54,17 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                                     message: `Failed to read loan ${claimId} on chain ${chainId}: ${err}`,
                                 }),
                         });
+
+                        // Contract returns zeroed data for non-existent claims
+                        if (result.creditor === zeroAddress && result.debtor === zeroAddress) {
+                            return yield* Effect.fail(
+                                new LoanNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Loan with claim ID ${claimId} does not exist on chain ${chainId}`,
+                                }),
+                            );
+                        }
 
                         return {
                             claimAmount: result.claimAmount,
@@ -133,6 +144,33 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                             chain,
                             transport: http(rpcUrl),
                         });
+
+                        // First verify the loan exists (contract returns zeroed data for non-existent claims)
+                        const loan = yield* Effect.tryPromise({
+                            try: () =>
+                                client.readContract({
+                                    address: contractAddress as Hex,
+                                    abi: bullaFrendLendV2Abi,
+                                    functionName: 'getLoan',
+                                    args: [claimId],
+                                }),
+                            catch: err =>
+                                new LoanNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Failed to read loan ${claimId} on chain ${chainId}: ${err}`,
+                                }),
+                        });
+
+                        if (loan.creditor === zeroAddress && loan.debtor === zeroAddress) {
+                            return yield* Effect.fail(
+                                new LoanNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Loan with claim ID ${claimId} does not exist on chain ${chainId}`,
+                                }),
+                            );
+                        }
 
                         const result = yield* Effect.tryPromise({
                             try: () =>
