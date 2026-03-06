@@ -143,49 +143,59 @@ describe.skipIf(!forkUrl)('view functions (e2e)', () => {
     // =========================================================================
 
     describe('frendlend view commands', () => {
-        it('get-loan fails gracefully for non-existent claim', () => {
+        it('get-loan returns data for a claim ID', () => {
             const result = runCli([
                 'frendlend', 'get-loan',
                 '--rpc-url', anvil.rpcUrl,
                 '--chain', String(SEPOLIA_CHAIN_ID),
-                '--claim-id', '999999999',
+                '--claim-id', '1',
                 '--format', 'json',
             ]);
-            // Should fail with a meaningful error (non-existent loan)
-            expect(result.exitCode).not.toBe(0);
+            expect(result.exitCode).toBe(0);
+            const parsed = JSON.parse(result.stdout);
+            expect(parsed).toHaveProperty('claimAmount');
+            expect(parsed).toHaveProperty('status');
+            expect(parsed).toHaveProperty('debtor');
+            expect(parsed).toHaveProperty('creditor');
         });
 
-        it('get-offer fails gracefully for non-existent offer', () => {
+        it('get-offer returns data for an offer ID', () => {
             const result = runCli([
                 'frendlend', 'get-offer',
                 '--rpc-url', anvil.rpcUrl,
                 '--chain', String(SEPOLIA_CHAIN_ID),
-                '--offer-id', '999999999',
+                '--offer-id', '1',
                 '--format', 'json',
             ]);
-            expect(result.exitCode).not.toBe(0);
+            expect(result.exitCode).toBe(0);
+            const parsed = JSON.parse(result.stdout);
+            expect(parsed).toHaveProperty('params');
+            expect(parsed).toHaveProperty('requestedByCreditor');
         });
 
-        it('total-due fails gracefully for non-existent claim', () => {
+        it('total-due returns data for a claim ID', () => {
             const result = runCli([
                 'frendlend', 'total-due',
                 '--rpc-url', anvil.rpcUrl,
                 '--chain', String(SEPOLIA_CHAIN_ID),
-                '--claim-id', '999999999',
+                '--claim-id', '1',
                 '--format', 'json',
             ]);
-            expect(result.exitCode).not.toBe(0);
+            expect(result.exitCode).toBe(0);
+            const parsed = JSON.parse(result.stdout);
+            expect(parsed).toHaveProperty('remainingPrincipal');
+            expect(parsed).toHaveProperty('grossInterest');
         });
 
         it('auto-detects chain from --rpc-url when --chain is omitted', () => {
             const result = runCli([
                 'frendlend', 'get-loan',
                 '--rpc-url', anvil.rpcUrl,
-                '--claim-id', '999999999',
+                '--claim-id', '1',
                 '--format', 'json',
             ]);
-            // Should fail for the non-existent loan, NOT for missing chain
-            // (chain should be auto-detected from the RPC)
+            // Chain should be auto-detected from the RPC, not fail with missing chain error
+            expect(result.exitCode).toBe(0);
             expect(result.stderr).not.toContain('--chain or --rpc-url must be provided');
         });
     });
