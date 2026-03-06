@@ -65,3 +65,9 @@ export class RpcConnectionError extends Data.TaggedError('RpcConnectionError')<{
 export class MissingChainConfigError extends Data.TaggedError('MissingChainConfigError')<{
     readonly message: string;
 }> {}
+
+export class ChainMismatchError extends Data.TaggedError('ChainMismatchError')<{
+    readonly providedChainId: number;
+    readonly rpcChainId: number;
+    readonly message: string;
+}> {}

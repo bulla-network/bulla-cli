@@ -1,6 +1,6 @@
 import { Effect, Exit, Option } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
-import { MissingChainConfigError, RpcConnectionError, UnsupportedChainError } from '../../../src/domain/errors.js';
+import { ChainMismatchError, MissingChainConfigError, RpcConnectionError, UnsupportedChainError } from '../../../src/domain/errors.js';
 import { getChainId } from '../../../src/cli/options/common.js';
 
 // Mock the chain-resolver module so we don't need a real RPC
@@ -88,11 +88,22 @@ describe('getChainId', () => {
         }
     });
 
-    it('prefers --chain over --rpc-url when both are provided', async () => {
-        const exit = await Effect.runPromiseExit(getChainId(Option.some(137), 'http://good-rpc'));
+    it('succeeds when --chain matches --rpc-url chain ID', async () => {
+        const exit = await Effect.runPromiseExit(getChainId(Option.some(8453), 'http://good-rpc'));
         expect(Exit.isSuccess(exit)).toBe(true);
         if (Exit.isSuccess(exit)) {
-            expect(exit.value).toBe(137); // Polygon, not Base from RPC
+            expect(exit.value).toBe(8453);
+        }
+    });
+
+    it('fails with ChainMismatchError when --chain and --rpc-url disagree', async () => {
+        const exit = await Effect.runPromiseExit(getChainId(Option.some(137), 'http://good-rpc'));
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+            const failure = exit.cause._tag === 'Fail' ? exit.cause.error : undefined;
+            expect(failure).toBeInstanceOf(ChainMismatchError);
+            expect((failure as ChainMismatchError).providedChainId).toBe(137);
+            expect((failure as ChainMismatchError).rpcChainId).toBe(8453);
         }
     });
 });

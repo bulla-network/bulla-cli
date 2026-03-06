@@ -1,6 +1,6 @@
 import { Command } from '@effect/cli';
 import { NodeContext, NodeRuntime } from '@effect/platform-node';
-import { Console, Effect, Layer } from 'effect';
+import { Cause, Console, Effect, Layer } from 'effect';
 import { createRequire } from 'node:module';
 import { factoringCommand } from './cli/commands/factoring.js';
 import { frendlendCommand } from './cli/commands/frendlend.js';
@@ -22,7 +22,9 @@ const cli = Command.run(bullaCommand, {
 });
 
 const program = (cli(process.argv) as unknown as Effect.Effect<void, { message: string }>).pipe(
-    Effect.catchAll(err => Console.error(err.message)),
+    Effect.catchAll(err =>
+        Console.error(err.message).pipe(Effect.andThen(Effect.failCause(Cause.die(err)))),
+    ),
     Effect.provide(Layer.merge(BuildModeLayers, NodeContext.layer)),
 );
 
