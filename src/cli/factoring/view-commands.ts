@@ -1,7 +1,7 @@
 import { Command, Options } from '@effect/cli';
 import { Console, Effect } from 'effect';
 import { FactoringReaderService } from '../../application/ports/factoring-reader-port.js';
-import { EthAddress } from '../../domain/types/eth.js';
+import { EthAddress, type Hex } from '../../domain/types/eth.js';
 import { makeFactoringReaderLayer } from '../../infrastructure/reading/viem-factoring-reader.js';
 import type { OutputFormat } from '../formatters/index.js';
 import { formatViewResult } from '../formatters/view.js';
@@ -34,7 +34,7 @@ const limitOption = Options.integer('limit').pipe(
 
 /** Validate and cast pool-address string to EthAddress branded type. */
 const toPoolAddress = (raw: string): EthAddress => {
-    const result = EthAddress(raw.toLowerCase() as `0x${string}`);
+    const result = EthAddress(raw.toLowerCase() as Hex);
     return result;
 };
 

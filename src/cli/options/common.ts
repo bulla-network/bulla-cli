@@ -1,5 +1,6 @@
 import { Options } from '@effect/cli';
-import { Console, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
+import { MissingChainConfigError, RpcConnectionError, UnsupportedChainError } from '../../domain/errors.js';
 import { resolveChainId } from '../../infrastructure/chain-resolver.js';
 import { CHAIN_NAMES, isChainId, SUPPORTED_CHAIN_IDS, type ChainId } from '../../domain/types/eth.js';
 
@@ -27,33 +28,30 @@ export const requiredRpcUrlOption = Options.text('rpc-url').pipe(
  * Resolve chain ID from the provided options.
  * If --chain is provided, use it directly.
  * If --rpc-url is provided without --chain, derive chain ID via eth_chainId.
- * If neither is provided, log an error and return undefined.
+ * Fails with a domain error if neither is provided or chain is unsupported.
  */
 export const getChainId = (
     chain: Option.Option<number>,
     rpcUrl: Option.Option<string> | string | undefined,
-): Effect.Effect<ChainId | undefined> =>
+): Effect.Effect<ChainId, UnsupportedChainError | RpcConnectionError | MissingChainConfigError> =>
     Effect.gen(function* () {
         const chainValue = Option.getOrUndefined(chain);
-        const rpcValue = typeof rpcUrl === 'string' ? rpcUrl : Option.isSome(rpcUrl as Option.Option<string>) ? Option.getOrUndefined(rpcUrl as Option.Option<string>) : undefined;
+        const rpcValue = typeof rpcUrl === 'string' ? rpcUrl : rpcUrl != null && Option.isSome(rpcUrl) ? Option.getOrUndefined(rpcUrl) : undefined;
 
         if (chainValue !== undefined) {
             if (!isChainId(chainValue)) {
-                yield* Console.error(`Unsupported chain ID: ${chainValue}`);
-                return undefined;
+                return yield* Effect.fail(
+                    new UnsupportedChainError({ chainId: chainValue, message: `Unsupported chain ID: ${chainValue}` }),
+                );
             }
             return chainValue;
         }
 
         if (rpcValue) {
-            const result = yield* Effect.either(resolveChainId(rpcValue));
-            if (result._tag === 'Left') {
-                yield* Console.error(result.left.message);
-                return undefined;
-            }
-            return result.right;
+            return yield* resolveChainId(rpcValue);
         }
 
-        yield* Console.error('Either --chain or --rpc-url must be provided');
-        return undefined;
+        return yield* Effect.fail(
+            new MissingChainConfigError({ message: 'Either --chain or --rpc-url must be provided' }),
+        );
     });

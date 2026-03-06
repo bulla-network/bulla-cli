@@ -1,7 +1,7 @@
 import { Effect, Layer } from 'effect';
 import { createPublicClient, http } from 'viem';
 import { FactoringReaderService } from '../../application/ports/factoring-reader-port.js';
-import type { EthAddress } from '../../domain/types/eth.js';
+import type { EthAddress, Hex } from '../../domain/types/eth.js';
 import type { FundInfo, KickbackInfo, PoolStatus, QueuedRedemption, QueueStats, TargetFeeBreakdown, UnfactorPreview } from '../../domain/types/factoring.js';
 import { bullaFactoringV2_1Abi } from '../abi/bulla-factoring-v2-1.js';
 import { redemptionQueueAbi } from '../abi/redemption-queue.js';
@@ -13,7 +13,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'getRedemptionQueue',
                     });
@@ -26,10 +26,10 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: queueAddress as `0x${string}`,
+                        address: queueAddress as Hex,
                         abi: redemptionQueueAbi,
                         functionName: 'getQueuedRedemptionsForOwner',
-                        args: [owner as `0x${string}`],
+                        args: [owner as Hex],
                     });
                 },
                 catch: err => new Error(`Failed to read queued redemption for ${owner} from queue ${queueAddress}: ${err}`),
@@ -46,7 +46,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'getFundInfo',
                     });
@@ -66,7 +66,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'viewPoolStatus',
                         args: [offset, limit],
@@ -85,7 +85,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'previewDeposit',
                         args: [assets],
@@ -99,7 +99,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'previewRedeem',
                         args: [shares],
@@ -113,7 +113,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'previewUnfactor',
                         args: [invoiceId],
@@ -131,7 +131,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'calculateKickbackAmount',
                         args: [invoiceId],
@@ -152,7 +152,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'calculateTargetFees',
                         args: [invoiceId, factorerUpfrontBps],
@@ -175,7 +175,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'calculateCapitalAccount',
                     });
@@ -188,7 +188,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'calculateAccruedProfits',
                     });
@@ -201,7 +201,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'getRedemptionQueue',
                     });
@@ -214,7 +214,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                         try: () => {
                             const client = createPublicClient({ transport: http(rpcUrl) });
                             return client.readContract({
-                                address: queueAddress as `0x${string}`,
+                                address: queueAddress as Hex,
                                 abi: redemptionQueueAbi,
                                 functionName: 'getQueueStats',
                             });
@@ -234,7 +234,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'getRedemptionQueue',
                     });
@@ -247,7 +247,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                         try: () => {
                             const client = createPublicClient({ transport: http(rpcUrl) });
                             return client.readContract({
-                                address: queueAddress as `0x${string}`,
+                                address: queueAddress as Hex,
                                 abi: redemptionQueueAbi,
                                 functionName: 'getNextRedemption',
                             });
@@ -267,7 +267,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 try: () => {
                     const client = createPublicClient({ transport: http(rpcUrl) });
                     return client.readContract({
-                        address: poolAddress as `0x${string}`,
+                        address: poolAddress as Hex,
                         abi: bullaFactoringV2_1Abi,
                         functionName: 'getRedemptionQueue',
                     });
@@ -280,7 +280,7 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                         try: () => {
                             const client = createPublicClient({ transport: http(rpcUrl) });
                             return client.readContract({
-                                address: queueAddress as `0x${string}`,
+                                address: queueAddress as Hex,
                                 abi: redemptionQueueAbi,
                                 functionName: 'isQueueEmpty',
                             });

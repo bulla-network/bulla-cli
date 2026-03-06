@@ -4,7 +4,7 @@ import * as chains from 'viem/chains';
 import { FrendLendReaderService } from '../../application/ports/frendlend-reader-port.js';
 import { RegistryService } from '../../application/ports/registry-port.js';
 import { LoanNotFoundError } from '../../domain/errors.js';
-import type { ChainId, EthAddress } from '../../domain/types/eth.js';
+import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 import type { LoanOfferOnChain, LoanOnChain } from '../../domain/types/frendlend.js';
 import { bullaFrendLendV2Abi } from '../abi/bulla-frendlend-v2.js';
 
@@ -42,7 +42,7 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                         const result = yield* Effect.tryPromise({
                             try: () =>
                                 client.readContract({
-                                    address: contractAddress as `0x${string}`,
+                                    address: contractAddress as Hex,
                                     abi: bullaFrendLendV2Abi,
                                     functionName: 'getLoan',
                                     args: [claimId],
@@ -91,7 +91,7 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                         const result = yield* Effect.tryPromise({
                             try: () =>
                                 client.readContract({
-                                    address: contractAddress as `0x${string}`,
+                                    address: contractAddress as Hex,
                                     abi: bullaFrendLendV2Abi,
                                     functionName: 'getLoanOffer',
                                     args: [offerId],
@@ -137,7 +137,7 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                         const result = yield* Effect.tryPromise({
                             try: () =>
                                 client.readContract({
-                                    address: contractAddress as `0x${string}`,
+                                    address: contractAddress as Hex,
                                     abi: bullaFrendLendV2Abi,
                                     functionName: 'getTotalAmountDue',
                                     args: [claimId],

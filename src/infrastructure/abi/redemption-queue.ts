@@ -1,3 +1,4 @@
+/** RedemptionQueue ABI — full contract ABI for viem type inference. */
 export const redemptionQueueAbi = [
     {
         "type": "constructor",

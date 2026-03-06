@@ -12,9 +12,9 @@ export const ViemInstantPaymentEncoderLive = Layer.succeed(InstantPaymentEncoder
                     abi: bullaInstantPaymentAbi,
                     functionName: 'instantPayment',
                     args: [
-                        params.to as `0x${string}`,
+                        params.to as Hex,
                         params.amount,
-                        params.tokenAddress as `0x${string}`,
+                        params.tokenAddress as Hex,
                         params.description,
                         params.tag,
                         params.ipfsHash,

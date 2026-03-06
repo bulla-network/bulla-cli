@@ -89,8 +89,6 @@ export const frendlendGetLoanCommand = Command.make(
     ({ chain, rpcUrl, claimId, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
-            if (!chainId) return;
-
             const readerLayer = Layer.provide(makeFrendLendReader(rpcUrl), BuildModeLayers);
             const reader = yield* FrendLendReaderService.pipe(Effect.provide(readerLayer));
             const loan = yield* reader.getLoan(chainId, BigInt(claimId));
@@ -115,8 +113,6 @@ export const frendlendGetOfferCommand = Command.make(
     ({ chain, rpcUrl, offerId, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
-            if (!chainId) return;
-
             const readerLayer = Layer.provide(makeFrendLendReader(rpcUrl), BuildModeLayers);
             const reader = yield* FrendLendReaderService.pipe(Effect.provide(readerLayer));
             const offer = yield* reader.getLoanOffer(chainId, BigInt(offerId));
@@ -141,8 +137,6 @@ export const frendlendTotalDueCommand = Command.make(
     ({ chain, rpcUrl, claimId, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
-            if (!chainId) return;
-
             const readerLayer = Layer.provide(makeFrendLendReader(rpcUrl), BuildModeLayers);
             const reader = yield* FrendLendReaderService.pipe(Effect.provide(readerLayer));
             const totalDue = yield* reader.getTotalAmountDue(chainId, BigInt(claimId));

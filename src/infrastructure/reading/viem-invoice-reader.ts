@@ -4,7 +4,7 @@ import * as chains from 'viem/chains';
 import { InvoiceReaderService } from '../../application/ports/invoice-reader-port.js';
 import { RegistryService } from '../../application/ports/registry-port.js';
 import { InvoiceNotFoundError } from '../../domain/errors.js';
-import type { ChainId, EthAddress } from '../../domain/types/eth.js';
+import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 import type { InvoiceOnChain } from '../../domain/types/invoice.js';
 import { bullaInvoiceAbi } from '../abi/bulla-invoice.js';
 
@@ -42,7 +42,7 @@ export const makeInvoiceReaderLayer = (rpcUrl: string) =>
                         const result = yield* Effect.tryPromise({
                             try: () =>
                                 client.readContract({
-                                    address: contractAddress as `0x${string}`,
+                                    address: contractAddress as Hex,
                                     abi: bullaInvoiceAbi,
                                     functionName: 'getInvoice',
                                     args: [claimId],
@@ -89,7 +89,7 @@ export const makeInvoiceReaderLayer = (rpcUrl: string) =>
                         const { result } = yield* Effect.tryPromise({
                             try: () =>
                                 client.simulateContract({
-                                    address: contractAddress as `0x${string}`,
+                                    address: contractAddress as Hex,
                                     abi: bullaInvoiceAbi,
                                     functionName: 'getTotalAmountNeededForPurchaseOrderDeposit',
                                     args: [claimId],
