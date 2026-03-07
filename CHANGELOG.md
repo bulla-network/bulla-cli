@@ -1,3 +1,10 @@
+## [0.0.6](https://github.com/bulla-network/bulla-cli/compare/v0.0.5...v0.0.6) (2026-03-07)
+
+
+### Features
+
+* add view function CLI commands and optional --chain auto-detection ([#7](https://github.com/bulla-network/bulla-cli/issues/7)) ([7390b41](https://github.com/bulla-network/bulla-cli/commit/7390b415e68181b0aef93e4c196eb5f45e5a0fd8))
+
 ## [0.0.5](https://github.com/bulla-network/bulla-cli/compare/v0.0.4...v0.0.5) (2026-03-04)
 
 
