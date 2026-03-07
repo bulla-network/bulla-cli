@@ -4,7 +4,7 @@ import * as chains from 'viem/chains';
 import { InvoiceReaderService } from '../../application/ports/invoice-reader-port.js';
 import { RegistryService } from '../../application/ports/registry-port.js';
 import { InvoiceNotFoundError } from '../../domain/errors.js';
-import type { ChainId, EthAddress } from '../../domain/types/eth.js';
+import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 import type { InvoiceOnChain } from '../../domain/types/invoice.js';
 import { bullaInvoiceAbi } from '../abi/bulla-invoice.js';
 
@@ -42,7 +42,7 @@ export const makeInvoiceReaderLayer = (rpcUrl: string) =>
                         const result = yield* Effect.tryPromise({
                             try: () =>
                                 client.readContract({
-                                    address: contractAddress as `0x${string}`,
+                                    address: contractAddress as Hex,
                                     abi: bullaInvoiceAbi,
                                     functionName: 'getInvoice',
                                     args: [claimId],
@@ -74,6 +74,35 @@ export const makeInvoiceReaderLayer = (rpcUrl: string) =>
                                 numberOfPeriodsPerYear: result.lateFeeConfig.numberOfPeriodsPerYear,
                             },
                         } satisfies InvoiceOnChain;
+                    }),
+
+                getTotalAmountNeededForPurchaseOrderDeposit: (chainId: ChainId, claimId: bigint) =>
+                    Effect.gen(function* () {
+                        const contractAddress = yield* registry.getInvoiceAddress(chainId);
+                        const chain = chainMap[chainId];
+
+                        const client = createPublicClient({
+                            chain,
+                            transport: http(rpcUrl),
+                        });
+
+                        const { result } = yield* Effect.tryPromise({
+                            try: () =>
+                                client.simulateContract({
+                                    address: contractAddress as Hex,
+                                    abi: bullaInvoiceAbi,
+                                    functionName: 'getTotalAmountNeededForPurchaseOrderDeposit',
+                                    args: [claimId],
+                                }),
+                            catch: err =>
+                                new InvoiceNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Failed to simulate getTotalAmountNeededForPurchaseOrderDeposit for claim ${claimId} on chain ${chainId}: ${err}`,
+                                }),
+                        });
+
+                        return result;
                     }),
             };
         }),

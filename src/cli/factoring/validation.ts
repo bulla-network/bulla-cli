@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Either, Option } from 'effect';
 import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
 import type {
     ApproveInvoiceParams,
@@ -15,7 +15,7 @@ import { validateAddress, validateAmount, validateChainId } from '../../domain/v
 type ValidationError = InvalidChainError | InvalidAddressError | InvalidAmountError;
 
 export const validateDepositParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     assets: string,
     receiver: string,
@@ -30,7 +30,7 @@ export const validateDepositParams = (
     });
 
 export const validateRedeemParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     shares: string,
     receiver: string,
@@ -47,7 +47,7 @@ export const validateRedeemParams = (
     });
 
 export const validateWithdrawParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     assets: string,
     receiver: string,
@@ -64,7 +64,7 @@ export const validateWithdrawParams = (
     });
 
 export const validateApproveInvoiceParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     invoiceId: string,
     targetYieldBps: number,
@@ -85,7 +85,7 @@ export const validateApproveInvoiceParams = (
     });
 
 export const validateFundInvoiceParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     invoiceId: string,
     factorerUpfrontBps: number,
@@ -102,7 +102,7 @@ export const validateFundInvoiceParams = (
     });
 
 export const validateUnfactorInvoiceParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     invoiceId: string,
 ): Either.Either<UnfactorInvoiceParams, ValidationError> =>
@@ -115,7 +115,7 @@ export const validateUnfactorInvoiceParams = (
     });
 
 export const validateOfferLoanParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     debtor: string,
     targetYieldBps: number,
@@ -140,7 +140,7 @@ export const validateOfferLoanParams = (
     });
 
 export const validateCancelQueuedRedemptionParams = (
-    chain: number,
+    chain: Option.Option<number>,
     poolAddress: string,
     owner: string,
 ): Either.Either<CancelQueuedRedemptionParams, ValidationError> =>

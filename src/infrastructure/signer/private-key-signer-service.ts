@@ -48,7 +48,7 @@ export const makePrivateKeySignerService = (privateKey: Hex, rpcUrl?: string) =>
                 const hash = yield* Effect.tryPromise({
                     try: () =>
                         client.sendTransaction({
-                            to: tx.to as `0x${string}`,
+                            to: tx.to as Hex,
                             value: BigInt(tx.value),
                             data: tx.data,
                             chain,

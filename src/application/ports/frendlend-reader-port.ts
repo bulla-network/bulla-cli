@@ -16,6 +16,10 @@ export interface FrendLendReaderService {
         chainId: ChainId,
         offerId: bigint,
     ): Effect.Effect<LoanOfferOnChain, LoanNotFoundError | UnsupportedChainError | ContractNotFoundError>;
+    getTotalAmountDue(
+        chainId: ChainId,
+        claimId: bigint,
+    ): Effect.Effect<{ remainingPrincipal: bigint; grossInterest: bigint }, LoanNotFoundError | UnsupportedChainError | ContractNotFoundError>;
 }
 
 export const FrendLendReaderService = Context.GenericTag<FrendLendReaderService>('@services/FrendLendReaderService');

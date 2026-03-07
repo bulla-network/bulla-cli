@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Either, Option } from 'effect';
 import type { InvalidAddressError, InvalidAmountError, InvalidCallbackSelectorError, InvalidChainError } from '../../domain/errors.js';
 import type {
     AcceptLoanParams,
@@ -14,7 +14,7 @@ type ValidationError = InvalidChainError | InvalidAddressError | InvalidAmountEr
 
 /** Validate and parse raw CLI inputs into OfferLoanParams (pure). */
 export const validateOfferLoanParams = (
-    chain: number,
+    chain: Option.Option<number>,
     creditor: string,
     debtor: string,
     loanAmount: string,
@@ -50,7 +50,7 @@ export const validateOfferLoanParams = (
 
 /** Validate and parse raw CLI inputs into RejectLoanOfferParams (pure). */
 export const validateRejectLoanOfferParams = (
-    chain: number,
+    chain: Option.Option<number>,
     offerId: string,
 ): Either.Either<RejectLoanOfferParams, InvalidChainError> =>
     Either.gen(function* () {
@@ -62,7 +62,7 @@ export const validateRejectLoanOfferParams = (
 
 /** Validate and parse raw CLI inputs into AcceptLoanParams (pure). */
 export const validateAcceptLoanParams = (
-    chain: number,
+    chain: Option.Option<number>,
     offerId: string,
     receiver: string | undefined,
 ): Either.Either<AcceptLoanParams, ValidationError> =>
@@ -77,7 +77,7 @@ export const validateAcceptLoanParams = (
 
 /** Validate and parse raw CLI inputs into PayLoanParams (pure). */
 export const validatePayLoanParams = (
-    chain: number,
+    chain: Option.Option<number>,
     claimId: number,
     paymentAmount: string,
 ): Either.Either<PayLoanParams, ValidationError> =>
@@ -90,20 +90,20 @@ export const validatePayLoanParams = (
     });
 
 /** Validate and parse raw CLI inputs into LoanOperationParams for impair (pure). */
-export const validateImpairLoanParams = (chain: number, claimId: number): Either.Either<LoanOperationParams, InvalidChainError> =>
+export const validateImpairLoanParams = (chain: Option.Option<number>, claimId: number): Either.Either<LoanOperationParams, InvalidChainError> =>
     Either.gen(function* () {
         return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });
 
 /** Validate and parse raw CLI inputs into LoanOperationParams for mark-paid (pure). */
-export const validateMarkLoanAsPaidParams = (chain: number, claimId: number): Either.Either<LoanOperationParams, InvalidChainError> =>
+export const validateMarkLoanAsPaidParams = (chain: Option.Option<number>, claimId: number): Either.Either<LoanOperationParams, InvalidChainError> =>
     Either.gen(function* () {
         return { chainId: yield* validateChainId(chain), claimId: BigInt(claimId) };
     });
 
 /** Validate and parse raw CLI inputs into SetLoanCallbackParams (pure). */
 export const validateSetLoanCallbackParams = (
-    chain: number,
+    chain: Option.Option<number>,
     loanId: number,
     callbackContract: string,
     callbackSelector: string,
