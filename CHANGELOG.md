@@ -1,3 +1,10 @@
+## [0.0.7](https://github.com/bulla-network/bulla-cli/compare/v0.0.6...v0.0.7) (2026-03-16)
+
+
+### Features
+
+* add approve commands (create-claim, nft, erc20) ([#8](https://github.com/bulla-network/bulla-cli/issues/8)) ([874350a](https://github.com/bulla-network/bulla-cli/commit/874350a5fe6eead6854cb222ad6d7783c076eb0f))
+
 ## [0.0.6](https://github.com/bulla-network/bulla-cli/compare/v0.0.5...v0.0.6) (2026-03-07)
 
 
