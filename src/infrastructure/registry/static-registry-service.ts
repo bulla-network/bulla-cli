@@ -75,6 +75,52 @@ export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
 
         return Effect.succeed(address);
     },
+    getApprovalRegistryAddress: (chainId: ChainId) => {
+        if (!isChainId(chainId)) {
+            return Effect.fail(
+                new UnsupportedChainError({
+                    chainId,
+                    message: `Chain ${chainId} is not supported`,
+                }),
+            );
+        }
+
+        const address = REGISTRY[chainId]?.bullaApprovalRegistry;
+        if (!address) {
+            return Effect.fail(
+                new ContractNotFoundError({
+                    chainId,
+                    contractName: 'BullaApprovalRegistry',
+                    message: `No BullaApprovalRegistry contract found for chain ${chainId}`,
+                }),
+            );
+        }
+
+        return Effect.succeed(address);
+    },
+    getClaimAddress: (chainId: ChainId) => {
+        if (!isChainId(chainId)) {
+            return Effect.fail(
+                new UnsupportedChainError({
+                    chainId,
+                    message: `Chain ${chainId} is not supported`,
+                }),
+            );
+        }
+
+        const address = REGISTRY[chainId]?.bullaClaimV2;
+        if (!address) {
+            return Effect.fail(
+                new ContractNotFoundError({
+                    chainId,
+                    contractName: 'BullaClaimV2',
+                    message: `No BullaClaimV2 contract found for chain ${chainId}`,
+                }),
+            );
+        }
+
+        return Effect.succeed(address);
+    },
     validateFactoringPool: (chainId: ChainId, address: EthAddress) => {
         if (!isChainId(chainId)) {
             return Effect.fail(

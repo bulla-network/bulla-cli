@@ -13,6 +13,8 @@ export const ANVIL_ACCOUNTS = {
 
 export const SEPOLIA_CHAIN_ID = 11155111;
 
+export const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com';
+
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 // Sepolia contract addresses (from generated registry)
