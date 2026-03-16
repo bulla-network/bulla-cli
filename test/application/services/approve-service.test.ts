@@ -101,8 +101,8 @@ const TestApproveEncoder = Layer.succeed(ApproveEncoderService, {
         Effect.succeed(
             encodeFunctionData({
                 abi: bullaClaimV2Abi,
-                functionName: 'transferFrom',
-                args: [params.from as `0x${string}`, params.to as `0x${string}`, params.claimId],
+                functionName: 'safeTransferFrom',
+                args: [params.from as `0x${string}`, params.to as `0x${string}`, params.claimId, '0x'],
             }) as Hex,
         ),
 });
@@ -251,7 +251,7 @@ describe('NftTransferService (buildTransferNft)', () => {
         expect(result.operation).toBe(0);
     });
 
-    it('encodes calldata starting with the transferFrom function selector', async () => {
+    it('encodes calldata starting with the safeTransferFrom function selector', async () => {
         const params = makeTransferNftParams();
         const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
         const result = await Effect.runPromise(nftService.buildTransferNft(params));
