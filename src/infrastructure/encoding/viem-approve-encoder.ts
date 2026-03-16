@@ -38,7 +38,7 @@ const encodeTransferNft = (params: Omit<TransferNftParams, 'chainId'>): Effect.E
     Effect.sync(() =>
         encodeFunctionData({
             abi: bullaClaimV2Abi,
-            functionName: 'safeTransferFrom',
+            functionName: 'transferFrom',
             args: [params.from, params.to, params.claimId],
         }),
     );
