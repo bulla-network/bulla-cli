@@ -49,29 +49,6 @@ describe('bulla approve build (e2e)', () => {
         expect(tx.data).toMatch(/^0x[0-9a-f]+$/);
     });
 
-    it('approve nft build outputs valid JSON transaction', () => {
-        const result = runCli([
-            'approve',
-            'nft',
-            'build',
-            '--chain',
-            String(SEPOLIA_CHAIN_ID),
-            '--to',
-            ANVIL_ACCOUNTS.account1.address,
-            '--claim-id',
-            '42',
-            '--format',
-            'json',
-        ]);
-
-        expect(result.exitCode).toBe(0);
-        const tx = JSON.parse(result.stdout);
-        expect(tx.to).toMatch(/^0x[0-9a-fA-F]{40}$/);
-        expect(tx.data).toMatch(/^0x[0-9a-f]+$/);
-        expect(tx.value).toBe('0');
-        expect(tx.operation).toBe(0);
-    });
-
     it('approve erc20 build outputs valid JSON transaction', () => {
         const result = runCli([
             'approve',
@@ -97,12 +74,73 @@ describe('bulla approve build (e2e)', () => {
         expect(tx.operation).toBe(0);
     });
 
-    it('approve --help shows all subcommands', () => {
+    it('approve --help shows create-claim and erc20 subcommands', () => {
         const result = runCli(['approve', '--help']);
 
         expect(result.exitCode).toBe(0);
         expect(result.stdout).toContain('create-claim');
-        expect(result.stdout).toContain('nft');
         expect(result.stdout).toContain('erc20');
+    });
+});
+
+describe('approve-nft via invoice and frendlend (e2e)', () => {
+    it('invoice approve-nft build outputs valid JSON transaction', () => {
+        const result = runCli([
+            'invoice',
+            'approve-nft',
+            'build',
+            '--chain',
+            String(SEPOLIA_CHAIN_ID),
+            '--to',
+            ANVIL_ACCOUNTS.account1.address,
+            '--claim-id',
+            '42',
+            '--format',
+            'json',
+        ]);
+
+        expect(result.exitCode).toBe(0);
+        const tx = JSON.parse(result.stdout);
+        expect(tx.to).toMatch(/^0x[0-9a-fA-F]{40}$/);
+        expect(tx.data).toMatch(/^0x[0-9a-f]+$/);
+        expect(tx.value).toBe('0');
+        expect(tx.operation).toBe(0);
+    });
+
+    it('frendlend approve-nft build outputs valid JSON transaction', () => {
+        const result = runCli([
+            'frendlend',
+            'approve-nft',
+            'build',
+            '--chain',
+            String(SEPOLIA_CHAIN_ID),
+            '--to',
+            ANVIL_ACCOUNTS.account1.address,
+            '--claim-id',
+            '42',
+            '--format',
+            'json',
+        ]);
+
+        expect(result.exitCode).toBe(0);
+        const tx = JSON.parse(result.stdout);
+        expect(tx.to).toMatch(/^0x[0-9a-fA-F]{40}$/);
+        expect(tx.data).toMatch(/^0x[0-9a-f]+$/);
+        expect(tx.value).toBe('0');
+        expect(tx.operation).toBe(0);
+    });
+
+    it('invoice --help shows approve-nft subcommand', () => {
+        const result = runCli(['invoice', '--help']);
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain('approve-nft');
+    });
+
+    it('frendlend --help shows approve-nft subcommand', () => {
+        const result = runCli(['frendlend', '--help']);
+
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toContain('approve-nft');
     });
 });

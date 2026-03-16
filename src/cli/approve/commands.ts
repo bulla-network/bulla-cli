@@ -1,6 +1,6 @@
 import { Command } from '@effect/cli';
 import { Console, Effect, Option } from 'effect';
-import { buildApproveCreateClaim, buildApproveErc20, buildApproveNft } from '../../application/services/approve-service.js';
+import { buildApproveCreateClaim, buildApproveErc20 } from '../../application/services/approve-service.js';
 import { sendTransaction } from '../../application/services/transaction-utils.js';
 import type { Hex } from '../../domain/types/eth.js';
 import { makeSignerLayer } from '../../infrastructure/layers.js';
@@ -11,8 +11,6 @@ import {
     approvalCountOption,
     approvalTypeOption,
     approveAmountOption,
-    approveClaimIdOption,
-    approveToOption,
     bindingAllowedOption,
     controllerOption,
     erc20TokenOption,
@@ -21,7 +19,6 @@ import {
 import {
     validateApproveCreateClaimParams,
     validateApproveErc20Params,
-    validateApproveNftParams,
 } from './validation.js';
 
 // ============================================================================
@@ -71,51 +68,6 @@ const approveCreateClaimExecuteCommand = Command.make(
 const approveCreateClaimCommand = Command.make('create-claim', {}).pipe(
     Command.withDescription('Approve a controller to create claims on your behalf (BullaApprovalRegistry)'),
     Command.withSubcommands([approveCreateClaimBuildCommand, approveCreateClaimExecuteCommand]),
-);
-
-// ============================================================================
-// APPROVE NFT
-// ============================================================================
-
-const approveNftBuildCommand = Command.make(
-    'build',
-    {
-        chain: chainOption,
-        to: approveToOption,
-        claimId: approveClaimIdOption,
-        format: formatOption,
-    },
-    ({ chain, to, claimId, format }) =>
-        Effect.gen(function* () {
-            const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params);
-            yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Build an unsigned ERC721 approve transaction (no private key required)'));
-
-const approveNftExecuteCommand = Command.make(
-    'execute',
-    {
-        chain: chainOption,
-        to: approveToOption,
-        claimId: approveClaimIdOption,
-        privateKey: privateKeyOption,
-        rpcUrl: rpcUrlOption,
-        format: formatOption,
-    },
-    ({ chain, to, claimId, privateKey, rpcUrl, format }) =>
-        Effect.gen(function* () {
-            const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params);
-            const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
-            yield* Console.log(formatResult(result, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Sign and send an ERC721 approve transaction (requires private key)'));
-
-const approveNftCommand = Command.make('nft', {}).pipe(
-    Command.withDescription('Approve an address for a specific claim NFT (BullaClaimV2)'),
-    Command.withSubcommands([approveNftBuildCommand, approveNftExecuteCommand]),
 );
 
 // ============================================================================
@@ -171,6 +123,5 @@ const approveErc20Command = Command.make('erc20', {}).pipe(
 
 export const approveCommands = [
     approveCreateClaimCommand,
-    approveNftCommand,
     approveErc20Command,
 ] as const;
