@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process';
+import { ANVIL_ACCOUNTS } from './constants.js';
 
 export interface AnvilInstance {
     process: ChildProcess;
@@ -27,6 +28,12 @@ export async function startAnvil(forkUrl: string): Promise<AnvilInstance> {
 
     await waitForAnvil(rpcUrl, 30_000);
 
+    // Clear any contract code at anvil test accounts.
+    // On Sepolia, these well-known Hardhat addresses have EOF contracts deployed,
+    // which causes safeTransferFrom to call onERC721Received and revert.
+    await clearAccountCode(rpcUrl, ANVIL_ACCOUNTS.account0.address);
+    await clearAccountCode(rpcUrl, ANVIL_ACCOUNTS.account1.address);
+
     return {
         process: proc,
         rpcUrl,
@@ -38,6 +45,14 @@ export async function startAnvil(forkUrl: string): Promise<AnvilInstance> {
             }
         },
     };
+}
+
+async function clearAccountCode(rpcUrl: string, address: string): Promise<void> {
+    await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'anvil_setCode', params: [address, '0x'], id: 1 }),
+    });
 }
 
 async function waitForAnvil(rpcUrl: string, timeoutMs: number): Promise<void> {
