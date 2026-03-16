@@ -4,7 +4,7 @@ import { runCli, runCliExecute } from './helpers/cli-runner.js';
 import { approveCreateClaim, WETH_ADDRESS, wrapEthAndApprove } from './helpers/erc20-setup.js';
 import { getNewTokenIdFromReceipt, getOfferIdFromReceipt } from './helpers/receipt-parser.js';
 import { type AnvilInstance, startAnvil } from './setup/anvil.js';
-import { ANVIL_ACCOUNTS, CONTRACTS, SEPOLIA_CHAIN_ID } from './setup/constants.js';
+import { ANVIL_ACCOUNTS, CONTRACTS, SEPOLIA_CHAIN_ID, SEPOLIA_RPC_URL } from './setup/constants.js';
 
 const ownerOfAbi = parseAbi(['function ownerOf(uint256 tokenId) view returns (address)']);
 
@@ -102,13 +102,11 @@ describe('bulla approve build (e2e)', () => {
     });
 });
 
-const forkUrl = process.env.SEPOLIA_RPC_URL;
-
-describe.skipIf(!forkUrl)('invoice: approve-nft -> transfer-nft lifecycle (e2e)', () => {
+describe('invoice: approve-nft -> transfer-nft lifecycle (e2e)', () => {
     let anvil: AnvilInstance;
 
     beforeAll(async () => {
-        anvil = await startAnvil(forkUrl!);
+        anvil = await startAnvil(SEPOLIA_RPC_URL);
 
         // Approve both accounts on the BullaApprovalRegistry for the invoice contract
         await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account0.privateKey as `0x${string}`, CONTRACTS.bullaInvoice);
@@ -203,11 +201,11 @@ describe.skipIf(!forkUrl)('invoice: approve-nft -> transfer-nft lifecycle (e2e)'
     });
 });
 
-describe.skipIf(!forkUrl)('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
+describe('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
     let anvil: AnvilInstance;
 
     beforeAll(async () => {
-        anvil = await startAnvil(forkUrl!);
+        anvil = await startAnvil(SEPOLIA_RPC_URL);
 
         // Approve both accounts on the BullaApprovalRegistry for the frendlend contract
         await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account0.privateKey as `0x${string}`, CONTRACTS.frendLendV2);
