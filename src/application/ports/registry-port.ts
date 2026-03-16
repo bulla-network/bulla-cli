@@ -6,6 +6,8 @@ export interface RegistryService {
     readonly getInstantPaymentAddress: (chainId: ChainId) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
     readonly getInvoiceAddress: (chainId: ChainId) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
     readonly getFrendLendAddress: (chainId: ChainId) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
+    readonly getApprovalRegistryAddress: (chainId: ChainId) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
+    readonly getClaimAddress: (chainId: ChainId) => Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError>;
     readonly validateFactoringPool: (
         chainId: ChainId,
         address: EthAddress,

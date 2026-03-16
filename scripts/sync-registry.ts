@@ -68,6 +68,8 @@ async function main() {
         const bullaContractsV2 = network.contracts['bulla-contracts-v2'];
         const invoiceAddr = bullaContractsV2?.['bullaInvoice'];
         const frendLendV2Addr = bullaContractsV2?.['frendLendV2'];
+        const approvalRegistryAddr = bullaContractsV2?.['bullaApprovalRegistry'];
+        const claimV2Addr = bullaContractsV2?.['bullaClaimV2'];
 
         if (!instantPaymentAddr) {
             console.warn(`  Warning: Missing bullaInstantPayment for chain ${chainId} (${network.name}), skipping`);
@@ -76,7 +78,9 @@ async function main() {
 
         const invoicePart = invoiceAddr ? `, bullaInvoice: '${invoiceAddr}' as EthAddress` : '';
         const frendLendV2Part = frendLendV2Addr ? `, frendLendV2: '${frendLendV2Addr}' as EthAddress` : '';
-        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress${invoicePart}${frendLendV2Part} },`);
+        const approvalRegistryPart = approvalRegistryAddr ? `, bullaApprovalRegistry: '${approvalRegistryAddr}' as EthAddress` : '';
+        const claimV2Part = claimV2Addr ? `, bullaClaimV2: '${claimV2Addr}' as EthAddress` : '';
+        contracts.push(`    ${chainId}: { bullaInstantPayment: '${instantPaymentAddr}' as EthAddress${invoicePart}${frendLendV2Part}${approvalRegistryPart}${claimV2Part} },`);
         subgraphs.push(`    ${chainId}: '${network.graphql}',`);
         chainNames.push(`    ${chainId}: '${network.name}',`);
 
@@ -109,6 +113,8 @@ export interface ChainContracts {
     readonly bullaInstantPayment: EthAddress;
     readonly bullaInvoice?: EthAddress;
     readonly frendLendV2?: EthAddress;
+    readonly bullaApprovalRegistry?: EthAddress;
+    readonly bullaClaimV2?: EthAddress;
 }
 
 export const REGISTRY: Record<ChainId, ChainContracts> = {
