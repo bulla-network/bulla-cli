@@ -1,6 +1,7 @@
 import { Command } from '@effect/cli';
 import { Console, Effect, Option } from 'effect';
-import { buildApproveNft, buildTransferNft, getInvoiceControllerAddress } from '../../application/services/approve-service.js';
+import { NftTransferService } from '../../application/ports/nft-transfer-port.js';
+import { InvoiceNftTransferServiceLive } from '../../application/services/nft-transfer-service.js';
 import {
     buildAcceptPurchaseOrder,
     buildCancelInvoice,
@@ -550,9 +551,10 @@ export const invoiceApproveNftBuildCommand = Command.make(
     ({ chain, to, claimId, format }) =>
         Effect.gen(function* () {
             const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params, getInvoiceControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildApproveNft(params);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-        }),
+        }).pipe(Effect.provide(InvoiceNftTransferServiceLive)),
 ).pipe(Command.withDescription('Build an unsigned ERC721 approve transaction for an invoice claim NFT'));
 
 export const invoiceApproveNftExecuteCommand = Command.make(
@@ -568,11 +570,12 @@ export const invoiceApproveNftExecuteCommand = Command.make(
     ({ chain, to, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params, getInvoiceControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildApproveNft(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
             const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
-        }),
+        }).pipe(Effect.provide(InvoiceNftTransferServiceLive)),
 ).pipe(Command.withDescription('Sign and send an ERC721 approve transaction for an invoice claim NFT'));
 
 export const invoiceApproveNftCommand = Command.make('approve-nft', {}).pipe(
@@ -596,10 +599,11 @@ export const invoiceTransferNftBuildCommand = Command.make(
     ({ chain, from, to, claimId, format }) =>
         Effect.gen(function* () {
             const params = yield* validateTransferNftParams(chain, from, to, claimId);
-            const tx = yield* buildTransferNft(params, getInvoiceControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildTransferNft(params);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Build an unsigned ERC721 transferFrom transaction for an invoice claim NFT'));
+        }).pipe(Effect.provide(InvoiceNftTransferServiceLive)),
+).pipe(Command.withDescription('Build an unsigned safeTransferFrom transaction for an invoice claim NFT'));
 
 export const invoiceTransferNftExecuteCommand = Command.make(
     'execute',
@@ -615,12 +619,13 @@ export const invoiceTransferNftExecuteCommand = Command.make(
     ({ chain, from, to, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateTransferNftParams(chain, from, to, claimId);
-            const tx = yield* buildTransferNft(params, getInvoiceControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildTransferNft(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
             const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Sign and send an ERC721 transferFrom transaction for an invoice claim NFT'));
+        }).pipe(Effect.provide(InvoiceNftTransferServiceLive)),
+).pipe(Command.withDescription('Sign and send a safeTransferFrom transaction for an invoice claim NFT'));
 
 export const invoiceTransferNftCommand = Command.make('transfer-nft', {}).pipe(
     Command.withDescription('Transfer an invoice claim NFT to another address (via BullaInvoice controller)'),

@@ -1,6 +1,7 @@
 import { Command } from '@effect/cli';
 import { Console, Effect, Option } from 'effect';
-import { buildApproveNft, buildTransferNft, getFrendLendControllerAddress } from '../../application/services/approve-service.js';
+import { NftTransferService } from '../../application/ports/nft-transfer-port.js';
+import { FrendLendNftTransferServiceLive } from '../../application/services/nft-transfer-service.js';
 import {
     buildAcceptLoan,
     buildImpairLoan,
@@ -455,9 +456,10 @@ export const frendlendApproveNftBuildCommand = Command.make(
     ({ chain, to, claimId, format }) =>
         Effect.gen(function* () {
             const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params, getFrendLendControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildApproveNft(params);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-        }),
+        }).pipe(Effect.provide(FrendLendNftTransferServiceLive)),
 ).pipe(Command.withDescription('Build an unsigned ERC721 approve transaction for a loan claim NFT'));
 
 export const frendlendApproveNftExecuteCommand = Command.make(
@@ -473,11 +475,12 @@ export const frendlendApproveNftExecuteCommand = Command.make(
     ({ chain, to, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params, getFrendLendControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildApproveNft(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
             const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
-        }),
+        }).pipe(Effect.provide(FrendLendNftTransferServiceLive)),
 ).pipe(Command.withDescription('Sign and send an ERC721 approve transaction for a loan claim NFT'));
 
 export const frendlendApproveNftCommand = Command.make('approve-nft', {}).pipe(
@@ -501,10 +504,11 @@ export const frendlendTransferNftBuildCommand = Command.make(
     ({ chain, from, to, claimId, format }) =>
         Effect.gen(function* () {
             const params = yield* validateTransferNftParams(chain, from, to, claimId);
-            const tx = yield* buildTransferNft(params, getFrendLendControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildTransferNft(params);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Build an unsigned ERC721 transferFrom transaction for a loan claim NFT'));
+        }).pipe(Effect.provide(FrendLendNftTransferServiceLive)),
+).pipe(Command.withDescription('Build an unsigned safeTransferFrom transaction for a loan claim NFT'));
 
 export const frendlendTransferNftExecuteCommand = Command.make(
     'execute',
@@ -520,12 +524,13 @@ export const frendlendTransferNftExecuteCommand = Command.make(
     ({ chain, from, to, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateTransferNftParams(chain, from, to, claimId);
-            const tx = yield* buildTransferNft(params, getFrendLendControllerAddress);
+            const nftService = yield* NftTransferService;
+            const tx = yield* nftService.buildTransferNft(params);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
             const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Sign and send an ERC721 transferFrom transaction for a loan claim NFT'));
+        }).pipe(Effect.provide(FrendLendNftTransferServiceLive)),
+).pipe(Command.withDescription('Sign and send a safeTransferFrom transaction for a loan claim NFT'));
 
 export const frendlendTransferNftCommand = Command.make('transfer-nft', {}).pipe(
     Command.withDescription('Transfer a loan claim NFT to another address (via BullaFrendLendV2 controller)'),

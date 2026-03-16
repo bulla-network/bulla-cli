@@ -2,16 +2,14 @@ import { Effect, Layer } from 'effect';
 import { encodeFunctionData } from 'viem';
 import { describe, expect, it } from 'vitest';
 import { ApproveEncoderService } from '../../../src/application/ports/approve-encoder-port.js';
+import { NftTransferService } from '../../../src/application/ports/nft-transfer-port.js';
 import { RegistryService } from '../../../src/application/ports/registry-port.js';
+import { buildApproveCreateClaim, buildApproveErc20 } from '../../../src/application/services/approve-service.js';
 import {
-    buildApproveCreateClaim,
-    buildApproveErc20,
-    buildApproveNft,
-    buildTransferNft,
-    getClaimContractAddress,
-    getInvoiceControllerAddress,
-    getFrendLendControllerAddress,
-} from '../../../src/application/services/approve-service.js';
+    InvoiceNftTransferServiceLive,
+    FrendLendNftTransferServiceLive,
+    ClaimNftTransferServiceLive,
+} from '../../../src/application/services/nft-transfer-service.js';
 import { CreateClaimApprovalType, type ApproveCreateClaimParams, type ApproveErc20Params, type ApproveNftParams, type TransferNftParams } from '../../../src/domain/types/approve.js';
 import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import { bullaApprovalRegistryAbi } from '../../../src/infrastructure/abi/bulla-approval-registry.js';
@@ -103,13 +101,17 @@ const TestApproveEncoder = Layer.succeed(ApproveEncoderService, {
         Effect.succeed(
             encodeFunctionData({
                 abi: bullaClaimV2Abi,
-                functionName: 'transferFrom',
+                functionName: 'safeTransferFrom',
                 args: [params.from as `0x${string}`, params.to as `0x${string}`, params.claimId],
             }) as Hex,
         ),
 });
 
 const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestApproveEncoder);
+
+const InvoiceNftTestLayer = Layer.provide(InvoiceNftTransferServiceLive, BuildTestLayers);
+const FrendLendNftTestLayer = Layer.provide(FrendLendNftTransferServiceLive, BuildTestLayers);
+const ClaimNftTestLayer = Layer.provide(ClaimNftTransferServiceLive, BuildTestLayers);
 
 // --- Tests ---
 
@@ -151,10 +153,11 @@ describe('buildApproveCreateClaim', () => {
     });
 });
 
-describe('buildApproveNft', () => {
+describe('NftTransferService (buildApproveNft)', () => {
     it('targets invoice controller for invoice claims', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildApproveNft(params));
 
         expect(result.to).toBe(INVOICE_ADDRESS);
         expect(result.operation).toBe(0);
@@ -162,7 +165,8 @@ describe('buildApproveNft', () => {
 
     it('targets frendlend controller for loan claims', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params, getFrendLendControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(FrendLendNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildApproveNft(params));
 
         expect(result.to).toBe(FRENDLEND_ADDRESS);
         expect(result.operation).toBe(0);
@@ -170,7 +174,8 @@ describe('buildApproveNft', () => {
 
     it('targets claim contract for uncontrolled claims', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params, getClaimContractAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(ClaimNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildApproveNft(params));
 
         expect(result.to).toBe(CLAIM_V2_ADDRESS);
         expect(result.operation).toBe(0);
@@ -178,14 +183,16 @@ describe('buildApproveNft', () => {
 
     it('sets value to "0"', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildApproveNft(params));
 
         expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the approve function selector', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildApproveNft(params));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
@@ -225,10 +232,11 @@ describe('buildApproveErc20', () => {
     });
 });
 
-describe('buildTransferNft', () => {
+describe('NftTransferService (buildTransferNft)', () => {
     it('targets invoice controller for invoice claims', async () => {
         const params = makeTransferNftParams();
-        const result = await Effect.runPromise(buildTransferNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildTransferNft(params));
 
         expect(result.to).toBe(INVOICE_ADDRESS);
         expect(result.operation).toBe(0);
@@ -236,15 +244,17 @@ describe('buildTransferNft', () => {
 
     it('targets frendlend controller for loan claims', async () => {
         const params = makeTransferNftParams();
-        const result = await Effect.runPromise(buildTransferNft(params, getFrendLendControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(FrendLendNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildTransferNft(params));
 
         expect(result.to).toBe(FRENDLEND_ADDRESS);
         expect(result.operation).toBe(0);
     });
 
-    it('encodes calldata starting with the transferFrom function selector', async () => {
+    it('encodes calldata starting with the safeTransferFrom function selector', async () => {
         const params = makeTransferNftParams();
-        const result = await Effect.runPromise(buildTransferNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildTransferNft(params));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
@@ -252,7 +262,8 @@ describe('buildTransferNft', () => {
 
     it('sets value to "0"', async () => {
         const params = makeTransferNftParams();
-        const result = await Effect.runPromise(buildTransferNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+        const nftService = await Effect.runPromise(NftTransferService.pipe(Effect.provide(InvoiceNftTestLayer)));
+        const result = await Effect.runPromise(nftService.buildTransferNft(params));
 
         expect(result.value).toBe('0');
     });

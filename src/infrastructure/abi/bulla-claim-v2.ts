@@ -1,4 +1,4 @@
-/** BullaClaimV2 (ERC721) ABI — approve and transferFrom functions. */
+/** BullaClaimV2 (ERC721) ABI — approve and safeTransferFrom functions. */
 export const bullaClaimV2Abi = [
     {
         inputs: [
@@ -16,7 +16,7 @@ export const bullaClaimV2Abi = [
             { internalType: 'address', name: 'to', type: 'address' },
             { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
         ],
-        name: 'transferFrom',
+        name: 'safeTransferFrom',
         outputs: [],
         stateMutability: 'nonpayable',
         type: 'function',
