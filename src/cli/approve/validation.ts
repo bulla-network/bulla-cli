@@ -1,6 +1,6 @@
 import { Either, Option } from 'effect';
 import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
-import { CreateClaimApprovalType, type ApproveCreateClaimParams, type ApproveErc20Params, type ApproveNftParams } from '../../domain/types/approve.js';
+import { CreateClaimApprovalType, type ApproveCreateClaimParams, type ApproveErc20Params, type ApproveNftParams, type TransferNftParams } from '../../domain/types/approve.js';
 import { validateAddress, validateAmount, validateChainId } from '../../domain/validation/eth.js';
 
 export class InvalidApprovalTypeError {
@@ -55,6 +55,21 @@ export const validateApproveNftParams = (
     Either.gen(function* () {
         return {
             chainId: yield* validateChainId(chain),
+            to: yield* validateAddress(to),
+            claimId: yield* validateAmount(claimId),
+        };
+    });
+
+export const validateTransferNftParams = (
+    chain: Option.Option<number>,
+    from: string,
+    to: string,
+    claimId: string,
+): Either.Either<TransferNftParams, ValidationError> =>
+    Either.gen(function* () {
+        return {
+            chainId: yield* validateChainId(chain),
+            from: yield* validateAddress(from),
             to: yield* validateAddress(to),
             claimId: yield* validateAmount(claimId),
         };

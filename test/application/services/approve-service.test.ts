@@ -7,8 +7,12 @@ import {
     buildApproveCreateClaim,
     buildApproveErc20,
     buildApproveNft,
+    buildTransferNft,
+    getClaimContractAddress,
+    getInvoiceControllerAddress,
+    getFrendLendControllerAddress,
 } from '../../../src/application/services/approve-service.js';
-import { CreateClaimApprovalType, type ApproveCreateClaimParams, type ApproveErc20Params, type ApproveNftParams } from '../../../src/domain/types/approve.js';
+import { CreateClaimApprovalType, type ApproveCreateClaimParams, type ApproveErc20Params, type ApproveNftParams, type TransferNftParams } from '../../../src/domain/types/approve.js';
 import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import { bullaApprovalRegistryAbi } from '../../../src/infrastructure/abi/bulla-approval-registry.js';
 import { bullaClaimV2Abi } from '../../../src/infrastructure/abi/bulla-claim-v2.js';
@@ -16,6 +20,8 @@ import { erc20Abi } from '../../../src/infrastructure/abi/erc20.js';
 
 const APPROVAL_REGISTRY_ADDRESS = '0xb1F9a06D72F8737B4fcf4550f1C8EA769772Ad76' as EthAddress;
 const CLAIM_V2_ADDRESS = '0x0d9EF9d436fF341E500360a6B5E5750aB85BCCB6' as EthAddress;
+const INVOICE_ADDRESS = '0xa2c4B7239A0d179A923751cC75277fe139AB092F' as EthAddress;
+const FRENDLEND_ADDRESS = '0x4d6A66D32CF34270e4cc9C9F201CA4dB650Be3f2' as EthAddress;
 const CONTROLLER = '0xa2c4B7239A0d179A923751cC75277fe139AB092F' as EthAddress;
 const SPENDER = '0x1234567890abcdef1234567890abcdef12345678' as EthAddress;
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as EthAddress;
@@ -36,6 +42,14 @@ const makeApproveNftParams = (overrides: Partial<ApproveNftParams> = {}): Approv
     ...overrides,
 });
 
+const makeTransferNftParams = (overrides: Partial<TransferNftParams> = {}): TransferNftParams => ({
+    chainId: 11155111 as ChainId,
+    from: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266' as EthAddress,
+    to: SPENDER,
+    claimId: 42n,
+    ...overrides,
+});
+
 const makeApproveErc20Params = (overrides: Partial<ApproveErc20Params> = {}): ApproveErc20Params => ({
     chainId: 11155111 as ChainId,
     token: TOKEN,
@@ -48,8 +62,8 @@ const makeApproveErc20Params = (overrides: Partial<ApproveErc20Params> = {}): Ap
 
 const TestRegistryService = Layer.succeed(RegistryService, {
     getInstantPaymentAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
-    getInvoiceAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
-    getFrendLendAddress: () => Effect.succeed('0x0000000000000000000000000000000000000000' as EthAddress),
+    getInvoiceAddress: () => Effect.succeed(INVOICE_ADDRESS),
+    getFrendLendAddress: () => Effect.succeed(FRENDLEND_ADDRESS),
     getApprovalRegistryAddress: () => Effect.succeed(APPROVAL_REGISTRY_ADDRESS),
     getClaimAddress: () => Effect.succeed(CLAIM_V2_ADDRESS),
     validateFactoringPool: () => Effect.succeed(true),
@@ -83,6 +97,14 @@ const TestApproveEncoder = Layer.succeed(ApproveEncoderService, {
                 abi: erc20Abi,
                 functionName: 'approve',
                 args: [params.spender as `0x${string}`, params.amount],
+            }) as Hex,
+        ),
+    encodeTransferNft: params =>
+        Effect.succeed(
+            encodeFunctionData({
+                abi: bullaClaimV2Abi,
+                functionName: 'transferFrom',
+                args: [params.from as `0x${string}`, params.to as `0x${string}`, params.claimId],
             }) as Hex,
         ),
 });
@@ -130,9 +152,25 @@ describe('buildApproveCreateClaim', () => {
 });
 
 describe('buildApproveNft', () => {
-    it('produces an unsigned transaction targeting the claim contract', async () => {
+    it('targets invoice controller for invoice claims', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildApproveNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.to).toBe(INVOICE_ADDRESS);
+        expect(result.operation).toBe(0);
+    });
+
+    it('targets frendlend controller for loan claims', async () => {
+        const params = makeApproveNftParams();
+        const result = await Effect.runPromise(buildApproveNft(params, getFrendLendControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.to).toBe(FRENDLEND_ADDRESS);
+        expect(result.operation).toBe(0);
+    });
+
+    it('targets claim contract for uncontrolled claims', async () => {
+        const params = makeApproveNftParams();
+        const result = await Effect.runPromise(buildApproveNft(params, getClaimContractAddress).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.to).toBe(CLAIM_V2_ADDRESS);
         expect(result.operation).toBe(0);
@@ -140,14 +178,14 @@ describe('buildApproveNft', () => {
 
     it('sets value to "0"', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildApproveNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.value).toBe('0');
     });
 
     it('encodes calldata starting with the approve function selector', async () => {
         const params = makeApproveNftParams();
-        const result = await Effect.runPromise(buildApproveNft(params).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(buildApproveNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
         expect(result.data.length).toBeGreaterThan(10);
@@ -184,5 +222,38 @@ describe('buildApproveErc20', () => {
         const result = await Effect.runPromise(buildApproveErc20(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.to).toBe(customToken);
+    });
+});
+
+describe('buildTransferNft', () => {
+    it('targets invoice controller for invoice claims', async () => {
+        const params = makeTransferNftParams();
+        const result = await Effect.runPromise(buildTransferNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.to).toBe(INVOICE_ADDRESS);
+        expect(result.operation).toBe(0);
+    });
+
+    it('targets frendlend controller for loan claims', async () => {
+        const params = makeTransferNftParams();
+        const result = await Effect.runPromise(buildTransferNft(params, getFrendLendControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.to).toBe(FRENDLEND_ADDRESS);
+        expect(result.operation).toBe(0);
+    });
+
+    it('encodes calldata starting with the transferFrom function selector', async () => {
+        const params = makeTransferNftParams();
+        const result = await Effect.runPromise(buildTransferNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
+        expect(result.data.length).toBeGreaterThan(10);
+    });
+
+    it('sets value to "0"', async () => {
+        const params = makeTransferNftParams();
+        const result = await Effect.runPromise(buildTransferNft(params, getInvoiceControllerAddress).pipe(Effect.provide(BuildTestLayers)));
+
+        expect(result.value).toBe('0');
     });
 });

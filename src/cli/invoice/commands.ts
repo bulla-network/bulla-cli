@@ -1,6 +1,6 @@
 import { Command } from '@effect/cli';
 import { Console, Effect, Option } from 'effect';
-import { buildApproveNft } from '../../application/services/approve-service.js';
+import { buildApproveNft, buildTransferNft, getInvoiceControllerAddress } from '../../application/services/approve-service.js';
 import {
     buildAcceptPurchaseOrder,
     buildCancelInvoice,
@@ -35,8 +35,8 @@ import {
     paymentAmountOption,
     periodsPerYearOption,
 } from '../options/invoice-options.js';
-import { approveClaimIdOption, approveToOption } from '../approve/options.js';
-import { validateApproveNftParams } from '../approve/validation.js';
+import { approveClaimIdOption, approveFromOption, approveToOption } from '../approve/options.js';
+import { validateApproveNftParams, validateTransferNftParams } from '../approve/validation.js';
 import { privateKeyOption, tokenOption } from '../options/pay-options.js';
 import {
     validateAcceptPurchaseOrderParams,
@@ -550,7 +550,7 @@ export const invoiceApproveNftBuildCommand = Command.make(
     ({ chain, to, claimId, format }) =>
         Effect.gen(function* () {
             const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params);
+            const tx = yield* buildApproveNft(params, getInvoiceControllerAddress);
             yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
         }),
 ).pipe(Command.withDescription('Build an unsigned ERC721 approve transaction for an invoice claim NFT'));
@@ -568,7 +568,7 @@ export const invoiceApproveNftExecuteCommand = Command.make(
     ({ chain, to, claimId, privateKey, rpcUrl, format }) =>
         Effect.gen(function* () {
             const params = yield* validateApproveNftParams(chain, to, claimId);
-            const tx = yield* buildApproveNft(params);
+            const tx = yield* buildApproveNft(params, getInvoiceControllerAddress);
             const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
             const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
             yield* Console.log(formatResult(result, format as OutputFormat));
@@ -576,8 +576,55 @@ export const invoiceApproveNftExecuteCommand = Command.make(
 ).pipe(Command.withDescription('Sign and send an ERC721 approve transaction for an invoice claim NFT'));
 
 export const invoiceApproveNftCommand = Command.make('approve-nft', {}).pipe(
-    Command.withDescription('Approve an address for a specific invoice claim NFT (BullaClaimV2)'),
+    Command.withDescription('Approve an address for a specific invoice claim NFT (via BullaInvoice controller)'),
     Command.withSubcommands([invoiceApproveNftBuildCommand, invoiceApproveNftExecuteCommand]),
+);
+
+// ============================================================================
+// TRANSFER NFT (ERC721 transferFrom via BullaInvoice controller)
+// ============================================================================
+
+export const invoiceTransferNftBuildCommand = Command.make(
+    'build',
+    {
+        chain: chainOption,
+        from: approveFromOption,
+        to: approveToOption,
+        claimId: approveClaimIdOption,
+        format: formatOption,
+    },
+    ({ chain, from, to, claimId, format }) =>
+        Effect.gen(function* () {
+            const params = yield* validateTransferNftParams(chain, from, to, claimId);
+            const tx = yield* buildTransferNft(params, getInvoiceControllerAddress);
+            yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('Build an unsigned ERC721 transferFrom transaction for an invoice claim NFT'));
+
+export const invoiceTransferNftExecuteCommand = Command.make(
+    'execute',
+    {
+        chain: chainOption,
+        from: approveFromOption,
+        to: approveToOption,
+        claimId: approveClaimIdOption,
+        privateKey: privateKeyOption,
+        rpcUrl: rpcUrlOption,
+        format: formatOption,
+    },
+    ({ chain, from, to, claimId, privateKey, rpcUrl, format }) =>
+        Effect.gen(function* () {
+            const params = yield* validateTransferNftParams(chain, from, to, claimId);
+            const tx = yield* buildTransferNft(params, getInvoiceControllerAddress);
+            const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
+            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
+            yield* Console.log(formatResult(result, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('Sign and send an ERC721 transferFrom transaction for an invoice claim NFT'));
+
+export const invoiceTransferNftCommand = Command.make('transfer-nft', {}).pipe(
+    Command.withDescription('Transfer an invoice claim NFT to another address (via BullaInvoice controller)'),
+    Command.withSubcommands([invoiceTransferNftBuildCommand, invoiceTransferNftExecuteCommand]),
 );
 
 // ============================================================================
@@ -595,4 +642,5 @@ export const invoiceCommands = [
     invoiceAcceptPoCommand,
     invoiceDeliverPoCommand,
     invoiceApproveNftCommand,
+    invoiceTransferNftCommand,
 ] as const;

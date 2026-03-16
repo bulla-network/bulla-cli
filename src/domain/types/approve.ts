@@ -21,6 +21,13 @@ export interface ApproveNftParams {
     claimId: bigint;
 }
 
+export interface TransferNftParams {
+    chainId: ChainId;
+    from: EthAddress;
+    to: EthAddress;
+    claimId: bigint;
+}
+
 export interface ApproveErc20Params {
     chainId: ChainId;
     token: EthAddress;

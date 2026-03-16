@@ -1,6 +1,25 @@
-import { describe, expect, it } from 'vitest';
-import { runCli } from './helpers/cli-runner.js';
-import { ANVIL_ACCOUNTS, SEPOLIA_CHAIN_ID } from './setup/constants.js';
+import { createPublicClient, http, parseAbi } from 'viem';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runCli, runCliExecute } from './helpers/cli-runner.js';
+import { approveCreateClaim, WETH_ADDRESS, wrapEthAndApprove } from './helpers/erc20-setup.js';
+import { getNewTokenIdFromReceipt, getOfferIdFromReceipt } from './helpers/receipt-parser.js';
+import { type AnvilInstance, startAnvil } from './setup/anvil.js';
+import { ANVIL_ACCOUNTS, CONTRACTS, SEPOLIA_CHAIN_ID } from './setup/constants.js';
+
+const ownerOfAbi = parseAbi(['function ownerOf(uint256 tokenId) view returns (address)']);
+
+/** Sepolia BullaClaimV2 address (from generated registry) */
+const BULLA_CLAIM_V2 = '0x0d9EF9d436fF341E500360a6B5E5750aB85BCCB6' as const;
+
+async function getOwnerOf(rpcUrl: string, claimId: bigint): Promise<string> {
+    const client = createPublicClient({ transport: http(rpcUrl) });
+    return client.readContract({
+        address: BULLA_CLAIM_V2,
+        abi: ownerOfAbi,
+        functionName: 'ownerOf',
+        args: [claimId],
+    });
+}
 
 describe('bulla approve build (e2e)', () => {
     it('approve create-claim build outputs valid JSON transaction', () => {
@@ -83,64 +102,235 @@ describe('bulla approve build (e2e)', () => {
     });
 });
 
-describe('approve-nft via invoice and frendlend (e2e)', () => {
-    it('invoice approve-nft build outputs valid JSON transaction', () => {
-        const result = runCli([
-            'invoice',
-            'approve-nft',
-            'build',
-            '--chain',
-            String(SEPOLIA_CHAIN_ID),
-            '--to',
-            ANVIL_ACCOUNTS.account1.address,
-            '--claim-id',
-            '42',
-            '--format',
-            'json',
-        ]);
+const forkUrl = process.env.SEPOLIA_RPC_URL;
 
-        expect(result.exitCode).toBe(0);
-        const tx = JSON.parse(result.stdout);
-        expect(tx.to).toMatch(/^0x[0-9a-fA-F]{40}$/);
-        expect(tx.data).toMatch(/^0x[0-9a-f]+$/);
-        expect(tx.value).toBe('0');
-        expect(tx.operation).toBe(0);
+describe.skipIf(!forkUrl)('invoice: approve-nft -> transfer-nft lifecycle (e2e)', () => {
+    let anvil: AnvilInstance;
+
+    beforeAll(async () => {
+        anvil = await startAnvil(forkUrl!);
+
+        // Approve both accounts on the BullaApprovalRegistry for the invoice contract
+        await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account0.privateKey as `0x${string}`, CONTRACTS.bullaInvoice);
+        await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account1.privateKey as `0x${string}`, CONTRACTS.bullaInvoice);
     });
 
-    it('frendlend approve-nft build outputs valid JSON transaction', () => {
-        const result = runCli([
-            'frendlend',
-            'approve-nft',
-            'build',
-            '--chain',
-            String(SEPOLIA_CHAIN_ID),
-            '--to',
-            ANVIL_ACCOUNTS.account1.address,
-            '--claim-id',
-            '42',
-            '--format',
-            'json',
-        ]);
-
-        expect(result.exitCode).toBe(0);
-        const tx = JSON.parse(result.stdout);
-        expect(tx.to).toMatch(/^0x[0-9a-fA-F]{40}$/);
-        expect(tx.data).toMatch(/^0x[0-9a-f]+$/);
-        expect(tx.value).toBe('0');
-        expect(tx.operation).toBe(0);
+    afterAll(() => {
+        anvil?.stop();
     });
 
-    it('invoice --help shows approve-nft subcommand', () => {
-        const result = runCli(['invoice', '--help']);
+    describe('mint invoice -> approve transfer -> transfer -> check ownership', () => {
+        let claimId: bigint;
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain('approve-nft');
+        it('creates an invoice (mint)', async () => {
+            const result = runCliExecute([
+                'invoice',
+                'create',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--debtor',
+                ANVIL_ACCOUNTS.account1.address,
+                '--creditor',
+                ANVIL_ACCOUNTS.account0.address,
+                '--amount',
+                '1000000000000000000',
+                '--token',
+                WETH_ADDRESS,
+                '--description',
+                'approve-transfer e2e test',
+                '--private-key',
+                ANVIL_ACCOUNTS.account0.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            claimId = await getNewTokenIdFromReceipt(anvil.rpcUrl, result.txHash as `0x${string}`);
+            expect(claimId).toBeGreaterThan(0n);
+
+            // Verify initial owner is account0 (creditor)
+            const owner = await getOwnerOf(anvil.rpcUrl, claimId);
+            expect(owner.toLowerCase()).toBe(ANVIL_ACCOUNTS.account0.address.toLowerCase());
+        });
+
+        it('approves account1 to transfer the invoice NFT', () => {
+            const result = runCliExecute([
+                'invoice',
+                'approve-nft',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--to',
+                ANVIL_ACCOUNTS.account1.address,
+                '--claim-id',
+                String(claimId),
+                '--private-key',
+                ANVIL_ACCOUNTS.account0.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+        });
+
+        it('transfers the invoice NFT from account0 to account1', () => {
+            const result = runCliExecute([
+                'invoice',
+                'transfer-nft',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--from',
+                ANVIL_ACCOUNTS.account0.address,
+                '--to',
+                ANVIL_ACCOUNTS.account1.address,
+                '--claim-id',
+                String(claimId),
+                '--private-key',
+                ANVIL_ACCOUNTS.account1.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+        });
+
+        it('verifies the NFT owner has changed to account1', async () => {
+            const owner = await getOwnerOf(anvil.rpcUrl, claimId);
+            expect(owner.toLowerCase()).toBe(ANVIL_ACCOUNTS.account1.address.toLowerCase());
+        });
+    });
+});
+
+describe.skipIf(!forkUrl)('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
+    let anvil: AnvilInstance;
+
+    beforeAll(async () => {
+        anvil = await startAnvil(forkUrl!);
+
+        // Approve both accounts on the BullaApprovalRegistry for the frendlend contract
+        await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account0.privateKey as `0x${string}`, CONTRACTS.frendLendV2);
+        await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account1.privateKey as `0x${string}`, CONTRACTS.frendLendV2);
+
+        // Fund account0 (lender) with WETH and approve the frendlend contract to spend it
+        await wrapEthAndApprove(
+            anvil.rpcUrl,
+            ANVIL_ACCOUNTS.account0.privateKey as `0x${string}`,
+            CONTRACTS.frendLendV2,
+            10_000_000_000_000_000_000n,
+        );
     });
 
-    it('frendlend --help shows approve-nft subcommand', () => {
-        const result = runCli(['frendlend', '--help']);
+    afterAll(() => {
+        anvil?.stop();
+    });
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain('approve-nft');
+    describe('offer loan -> accept loan -> approve transfer -> transfer -> check ownership', () => {
+        let offerId: bigint;
+        let claimId: bigint;
+
+        it('offers a loan', async () => {
+            const result = runCliExecute([
+                'frendlend',
+                'offer-loan',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--debtor',
+                ANVIL_ACCOUNTS.account1.address,
+                '--creditor',
+                ANVIL_ACCOUNTS.account0.address,
+                '--amount',
+                '1000000000000000000',
+                '--token',
+                WETH_ADDRESS,
+                '--description',
+                'frendlend approve-transfer e2e',
+                '--interest-rate-bps',
+                '500',
+                '--term-length',
+                '2592000',
+                '--private-key',
+                ANVIL_ACCOUNTS.account0.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            offerId = await getOfferIdFromReceipt(anvil.rpcUrl, result.txHash as `0x${string}`);
+            expect(offerId).toBeGreaterThan(0n);
+        });
+
+        it('accepts the loan', async () => {
+            const result = runCliExecute([
+                'frendlend',
+                'accept-loan',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--offer-id',
+                String(offerId),
+                '--private-key',
+                ANVIL_ACCOUNTS.account1.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            claimId = await getNewTokenIdFromReceipt(anvil.rpcUrl, result.txHash as `0x${string}`);
+            expect(claimId).toBeGreaterThan(0n);
+
+            // Verify initial owner is account0 (creditor/lender)
+            const owner = await getOwnerOf(anvil.rpcUrl, claimId);
+            expect(owner.toLowerCase()).toBe(ANVIL_ACCOUNTS.account0.address.toLowerCase());
+        });
+
+        it('approves account1 to transfer the loan NFT', () => {
+            const result = runCliExecute([
+                'frendlend',
+                'approve-nft',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--to',
+                ANVIL_ACCOUNTS.account1.address,
+                '--claim-id',
+                String(claimId),
+                '--private-key',
+                ANVIL_ACCOUNTS.account0.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+        });
+
+        it('transfers the loan NFT from account0 to account1', () => {
+            const result = runCliExecute([
+                'frendlend',
+                'transfer-nft',
+                'execute',
+                '--chain',
+                String(SEPOLIA_CHAIN_ID),
+                '--from',
+                ANVIL_ACCOUNTS.account0.address,
+                '--to',
+                ANVIL_ACCOUNTS.account1.address,
+                '--claim-id',
+                String(claimId),
+                '--private-key',
+                ANVIL_ACCOUNTS.account1.privateKey,
+                '--rpc-url',
+                anvil.rpcUrl,
+            ]);
+
+            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+        });
+
+        it('verifies the NFT owner has changed to account1', async () => {
+            const owner = await getOwnerOf(anvil.rpcUrl, claimId);
+            expect(owner.toLowerCase()).toBe(ANVIL_ACCOUNTS.account1.address.toLowerCase());
+        });
     });
 });

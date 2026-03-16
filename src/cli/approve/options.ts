@@ -20,11 +20,15 @@ export const bindingAllowedOption = Options.boolean('binding-allowed').pipe(
 );
 
 export const approveToOption = Options.text('to').pipe(
-    Options.withDescription('Address to approve for the NFT'),
+    Options.withDescription('Address to approve or transfer to'),
+);
+
+export const approveFromOption = Options.text('from').pipe(
+    Options.withDescription('Address to transfer the NFT from (current owner)'),
 );
 
 export const approveClaimIdOption = Options.text('claim-id').pipe(
-    Options.withDescription('Claim/token ID to approve'),
+    Options.withDescription('Claim/token ID'),
 );
 
 export const erc20TokenOption = Options.text('token').pipe(
