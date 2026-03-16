@@ -5,7 +5,8 @@ export const controllerOption = Options.text('controller').pipe(
 );
 
 export const approvalTypeOption = Options.choice('approval-type', ['unapproved', 'creditor-only', 'debtor-only', 'approved']).pipe(
-    Options.withDescription('Approval type: unapproved, creditor-only, debtor-only, or approved'),
+    Options.withDefault('approved'),
+    Options.withDescription('Approval type: unapproved, creditor-only, debtor-only, or approved (default: approved)'),
 );
 
 export const approvalCountOption = Options.text('approval-count').pipe(

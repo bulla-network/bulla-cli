@@ -3,13 +3,31 @@ import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from 
 import { CreateClaimApprovalType, type ApproveCreateClaimParams, type ApproveErc20Params, type ApproveNftParams } from '../../domain/types/approve.js';
 import { validateAddress, validateAmount, validateChainId } from '../../domain/validation/eth.js';
 
-type ValidationError = InvalidChainError | InvalidAddressError | InvalidAmountError;
+export class InvalidApprovalTypeError {
+    readonly _tag = 'InvalidApprovalTypeError' as const;
+    constructor(readonly approvalType: string, readonly message: string) {}
+}
+
+type ValidationError = InvalidChainError | InvalidAddressError | InvalidAmountError | InvalidApprovalTypeError;
 
 const APPROVAL_TYPE_MAP: Record<string, CreateClaimApprovalType> = {
     'unapproved': CreateClaimApprovalType.Unapproved,
     'creditor-only': CreateClaimApprovalType.CreditorOnly,
     'debtor-only': CreateClaimApprovalType.DebtorOnly,
     'approved': CreateClaimApprovalType.Approved,
+};
+
+const validateApprovalType = (approvalType: string): Either.Either<CreateClaimApprovalType, InvalidApprovalTypeError> => {
+    const mapped = APPROVAL_TYPE_MAP[approvalType];
+    if (mapped === undefined) {
+        return Either.left(
+            new InvalidApprovalTypeError(
+                approvalType,
+                `Invalid approval type: '${approvalType}'. Must be one of: ${Object.keys(APPROVAL_TYPE_MAP).join(', ')}`,
+            ),
+        );
+    }
+    return Either.right(mapped);
 };
 
 export const validateApproveCreateClaimParams = (
@@ -23,7 +41,7 @@ export const validateApproveCreateClaimParams = (
         return {
             chainId: yield* validateChainId(chain),
             controller: yield* validateAddress(controller),
-            approvalType: APPROVAL_TYPE_MAP[approvalType]!,
+            approvalType: yield* validateApprovalType(approvalType),
             approvalCount: BigInt(approvalCount),
             isBindingAllowed: bindingAllowed,
         };
