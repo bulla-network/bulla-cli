@@ -9,8 +9,8 @@ import type {
     VerifyMessageResponse,
 } from '../../domain/types/backend.js';
 
-const AUTH_BASE_URL = 'https://apiauth.bulla.network';
-const UNDERWRITER_BASE_URL = 'https://apiuw.bulla.network';
+const AUTH_BASE_URL = process.env.BULLA_AUTH_URL ?? 'https://apiauth.bulla.network';
+const UNDERWRITER_BASE_URL = process.env.BULLA_UW_URL ?? 'https://apiuw.bulla.network';
 
 const fetchJson = <T>(url: string, init?: RequestInit): Effect.Effect<T, Error> =>
     Effect.tryPromise({
