@@ -1,3 +1,10 @@
+## [0.0.8](https://github.com/bulla-network/bulla-cli/compare/v0.0.7...v0.0.8) (2026-03-18)
+
+
+### Features
+
+* add factoring pool view commands (DEV-2461) ([#9](https://github.com/bulla-network/bulla-cli/issues/9)) ([71732f2](https://github.com/bulla-network/bulla-cli/commit/71732f2e445571cb1839b7421ca2bf889f50be4e))
+
 ## [0.0.7](https://github.com/bulla-network/bulla-cli/compare/v0.0.6...v0.0.7) (2026-03-16)
 
 
