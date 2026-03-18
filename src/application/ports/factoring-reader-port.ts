@@ -21,6 +21,13 @@ export interface FactoringReaderService {
     readonly getQueueStats: (poolAddress: EthAddress) => Effect.Effect<QueueStats, Error>;
     readonly getNextRedemption: (poolAddress: EthAddress) => Effect.Effect<QueuedRedemption, Error>;
     readonly isQueueEmpty: (poolAddress: EthAddress) => Effect.Effect<boolean, Error>;
+    readonly pricePerShare: (poolAddress: EthAddress) => Effect.Effect<bigint, Error>;
+    readonly balanceOf: (poolAddress: EthAddress, account: EthAddress) => Effect.Effect<bigint, Error>;
+    readonly totalAssets: (poolAddress: EthAddress) => Effect.Effect<bigint, Error>;
+    readonly totalSupply: (poolAddress: EthAddress) => Effect.Effect<bigint, Error>;
+    readonly activeInvoiceAt: (poolAddress: EthAddress, index: bigint) => Effect.Effect<bigint, Error>;
+    readonly maxRedeem: (poolAddress: EthAddress, owner: EthAddress) => Effect.Effect<bigint, Error>;
+    readonly paidInvoicesGain: (poolAddress: EthAddress) => Effect.Effect<bigint, Error>;
 }
 
 export const FactoringReaderService = Context.GenericTag<FactoringReaderService>('@services/FactoringReaderService');

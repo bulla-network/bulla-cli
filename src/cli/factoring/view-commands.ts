@@ -7,8 +7,10 @@ import type { OutputFormat } from '../formatters/index.js';
 import { formatViewResult } from '../formatters/view.js';
 import { formatOption, requiredRpcUrlOption } from '../options/common.js';
 import {
+    accountOption,
     assetsOption,
     factoringInvoiceIdOption,
+    invoiceIndexOption,
     poolAddressOption,
     sharesOption,
     upfrontBpsOption,
@@ -262,6 +264,172 @@ const accruedProfitsCommand = Command.make(
 ).pipe(Command.withDescription('Calculate accrued profits for a factoring pool'));
 
 // ============================================================================
+// PRICE
+// ============================================================================
+
+const priceCommand = Command.make(
+    'price',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.pricePerShare(pool);
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ pricePerShare: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View the current price per share'));
+
+// ============================================================================
+// BALANCE
+// ============================================================================
+
+const balanceCommand = Command.make(
+    'balance',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        account: accountOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, account, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const accountAddr = toPoolAddress(account);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.balanceOf(pool, accountAddr);
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ balance: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View the share balance for an investor'));
+
+// ============================================================================
+// TOTAL-ASSETS
+// ============================================================================
+
+const totalAssetsCommand = Command.make(
+    'total-assets',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.totalAssets(pool);
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ totalAssets: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View the total assets in the pool'));
+
+// ============================================================================
+// TOTAL-SUPPLY
+// ============================================================================
+
+const totalSupplyCommand = Command.make(
+    'total-supply',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.totalSupply(pool);
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ totalSupply: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View the total shares outstanding'));
+
+// ============================================================================
+// ACTIVE-INVOICES
+// ============================================================================
+
+const activeInvoicesCommand = Command.make(
+    'active-invoices',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        index: invoiceIndexOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, index, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.activeInvoiceAt(pool, BigInt(index));
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ invoiceId: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View the active invoice ID at a given index'));
+
+// ============================================================================
+// MAX-REDEEM
+// ============================================================================
+
+const maxRedeemCommand = Command.make(
+    'max-redeem',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        account: accountOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, account, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const ownerAddr = toPoolAddress(account);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.maxRedeem(pool, ownerAddr);
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ maxRedeem: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View the maximum redeemable shares for an owner'));
+
+// ============================================================================
+// PAID-INVOICES-GAIN
+// ============================================================================
+
+const paidInvoicesGainCommand = Command.make(
+    'paid-invoices-gain',
+    {
+        rpcUrl: requiredRpcUrlOption,
+        poolAddress: poolAddressOption,
+        format: formatOption,
+    },
+    ({ rpcUrl, poolAddress, format }) =>
+        Effect.gen(function* () {
+            const pool = toPoolAddress(poolAddress);
+            const readerLayer = makeFactoringReaderLayer(rpcUrl);
+            const result = yield* Effect.gen(function* () {
+                const reader = yield* FactoringReaderService;
+                return yield* reader.paidInvoicesGain(pool);
+            }).pipe(Effect.provide(readerLayer));
+            yield* Console.log(formatViewResult({ paidInvoicesGain: result }, format as OutputFormat));
+        }),
+).pipe(Command.withDescription('View total realized gains from paid invoices'));
+
+// ============================================================================
 // QUEUE SUBCOMMANDS
 // ============================================================================
 
@@ -345,4 +513,11 @@ export const factoringViewCommands = [
     targetFeesCommand,
     capitalCommand,
     accruedProfitsCommand,
+    priceCommand,
+    balanceCommand,
+    totalAssetsCommand,
+    totalSupplyCommand,
+    activeInvoicesCommand,
+    maxRedeemCommand,
+    paidInvoicesGainCommand,
 ] as const;

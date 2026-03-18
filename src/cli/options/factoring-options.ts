@@ -1,5 +1,10 @@
 import { Options } from '@effect/cli';
 
+export const accountOption = Options.text('account').pipe(
+    Options.withAlias('a'),
+    Options.withDescription('Account address (e.g. investor or owner address)'),
+);
+
 export const poolAddressOption = Options.text('pool-address').pipe(
     Options.withAlias('p'),
     Options.withDescription('Factoring pool contract address'),
@@ -29,6 +34,8 @@ export const invoiceValueOverrideOption = Options.text('invoice-value-override')
     Options.withDefault('0'),
     Options.withDescription('Initial invoice value override (0 = use actual value)'),
 );
+
+export const invoiceIndexOption = Options.text('index').pipe(Options.withDescription('Index into the active invoices array (uint256)'));
 
 export const principalAmountOption = Options.text('principal-amount').pipe(Options.withDescription('Loan principal amount in token wei'));
 

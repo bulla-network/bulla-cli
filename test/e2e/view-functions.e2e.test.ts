@@ -56,8 +56,13 @@ describe.skipIf(!forkUrl)('view functions (e2e)', () => {
             ]);
             expect(result.exitCode).toBe(0);
             const parsed = JSON.parse(result.stdout);
-            expect(parsed).toHaveProperty('totalAssets');
-            expect(parsed).toHaveProperty('totalSupply');
+            expect(parsed).toHaveProperty('name');
+            expect(parsed).toHaveProperty('fundBalance');
+            expect(parsed).toHaveProperty('deployedCapital');
+            expect(parsed).toHaveProperty('capitalAccount');
+            expect(parsed).toHaveProperty('price');
+            expect(parsed).toHaveProperty('adminFeeBps');
+            expect(parsed).toHaveProperty('targetYieldBps');
         });
 
         it('preview-deposit returns shares amount', () => {

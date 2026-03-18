@@ -54,10 +54,15 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                 catch: err => new Error(`Failed to read fund info from pool ${poolAddress}: ${err}`),
             }).pipe(
                 Effect.map((result): FundInfo => ({
-                    totalAssets: result.fundBalance,
-                    totalSupply: result.capitalAccount,
-                    adminFeeBalance: BigInt(result.adminFeeBps),
-                    protocolFeeBalance: result.deployedCapital,
+                    name: result.name,
+                    creationTimestamp: result.creationTimestamp,
+                    fundBalance: result.fundBalance,
+                    deployedCapital: result.deployedCapital,
+                    capitalAccount: result.capitalAccount,
+                    price: result.price,
+                    tokensAvailableForRedemption: result.tokensAvailableForRedemption,
+                    adminFeeBps: result.adminFeeBps,
+                    targetYieldBps: result.targetYieldBps,
                 })),
             ),
 
@@ -289,4 +294,98 @@ export const makeFactoringReaderLayer = (rpcUrl: string) =>
                     }),
                 ),
             ),
+
+        pricePerShare: (poolAddress: EthAddress) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'pricePerShare',
+                    });
+                },
+                catch: err => new Error(`Failed to read price per share from pool ${poolAddress}: ${err}`),
+            }),
+
+        balanceOf: (poolAddress: EthAddress, account: EthAddress) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'balanceOf',
+                        args: [account as Hex],
+                    });
+                },
+                catch: err => new Error(`Failed to read balance for ${account} from pool ${poolAddress}: ${err}`),
+            }),
+
+        totalAssets: (poolAddress: EthAddress) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'totalAssets',
+                    });
+                },
+                catch: err => new Error(`Failed to read total assets from pool ${poolAddress}: ${err}`),
+            }),
+
+        totalSupply: (poolAddress: EthAddress) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'totalSupply',
+                    });
+                },
+                catch: err => new Error(`Failed to read total supply from pool ${poolAddress}: ${err}`),
+            }),
+
+        activeInvoiceAt: (poolAddress: EthAddress, index: bigint) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'activeInvoices',
+                        args: [index],
+                    });
+                },
+                catch: err => new Error(`Failed to read active invoice at index ${index} from pool ${poolAddress}: ${err}`),
+            }),
+
+        maxRedeem: (poolAddress: EthAddress, owner: EthAddress) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'maxRedeem',
+                        args: [owner as Hex],
+                    });
+                },
+                catch: err => new Error(`Failed to read max redeem for ${owner} from pool ${poolAddress}: ${err}`),
+            }),
+
+        paidInvoicesGain: (poolAddress: EthAddress) =>
+            Effect.tryPromise({
+                try: () => {
+                    const client = createPublicClient({ transport: http(rpcUrl) });
+                    return client.readContract({
+                        address: poolAddress as Hex,
+                        abi: bullaFactoringV2_1Abi,
+                        functionName: 'paidInvoicesGain',
+                    });
+                },
+                catch: err => new Error(`Failed to read paid invoices gain from pool ${poolAddress}: ${err}`),
+            }),
     });
