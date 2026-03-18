@@ -44,3 +44,15 @@ export const poolTermLengthOption = Options.integer('term-length').pipe(Options.
 export const periodsPerYearOption = Options.integer('periods-per-year').pipe(
     Options.withDescription('Number of interest periods per year'),
 );
+
+export const authTokenOption = Options.text('auth-token').pipe(
+    Options.withDescription('JWT authentication token from the authenticate command'),
+);
+
+export const claimIdsOption = Options.text('claim-ids').pipe(
+    Options.withDescription('Comma-separated list of claim IDs to underwrite'),
+);
+
+export const requestsFileOption = Options.text('requests-file').pipe(
+    Options.withDescription('Path to JSON file containing tap-credit requests array'),
+);
