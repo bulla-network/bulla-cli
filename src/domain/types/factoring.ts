@@ -67,12 +67,17 @@ export interface CancelQueuedRedemptionParams {
 
 // -- View function result types --
 
-// Result of getFundInfo()
+// Result of getFundInfo() — maps all 9 fields of the on-chain FundInfo struct
 export interface FundInfo {
-    totalAssets: bigint;
-    totalSupply: bigint;
-    adminFeeBalance: bigint;
-    protocolFeeBalance: bigint;
+    name: string;
+    creationTimestamp: bigint;
+    fundBalance: bigint;
+    deployedCapital: bigint;
+    capitalAccount: bigint;
+    price: bigint;
+    tokensAvailableForRedemption: bigint;
+    adminFeeBps: number;
+    targetYieldBps: bigint;
 }
 
 // Result of viewPoolStatus(offset, limit)
