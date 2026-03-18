@@ -1,3 +1,10 @@
+## [0.0.9](https://github.com/bulla-network/bulla-cli/compare/v0.0.8...v0.0.9) (2026-03-18)
+
+
+### Features
+
+* add backend CLI commands (authenticate, underwrite, tap-credit) ([#10](https://github.com/bulla-network/bulla-cli/issues/10)) ([3c6ab87](https://github.com/bulla-network/bulla-cli/commit/3c6ab87f337a227ea4abcec4abddc10304737569))
+
 ## [0.0.8](https://github.com/bulla-network/bulla-cli/compare/v0.0.7...v0.0.8) (2026-03-18)
 
 
