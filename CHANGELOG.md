@@ -1,3 +1,10 @@
+## [0.0.10](https://github.com/bulla-network/bulla-cli/compare/v0.0.9...v0.0.10) (2026-03-19)
+
+
+### Bug Fixes
+
+* correct auth getMessage endpoint to /message ([#11](https://github.com/bulla-network/bulla-cli/issues/11)) ([e150cc6](https://github.com/bulla-network/bulla-cli/commit/e150cc6a0967a3e3da7b786d7c5ba84f8524001a))
+
 ## [0.0.9](https://github.com/bulla-network/bulla-cli/compare/v0.0.8...v0.0.9) (2026-03-18)
 
 
