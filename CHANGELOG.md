@@ -1,3 +1,10 @@
+## [0.0.11](https://github.com/bulla-network/bulla-cli/compare/v0.0.10...v0.0.11) (2026-03-19)
+
+
+### Features
+
+* add --safe-address option and isV2 query param for underwrite/tap-credit ([#12](https://github.com/bulla-network/bulla-cli/issues/12)) ([20ccde6](https://github.com/bulla-network/bulla-cli/commit/20ccde6e96fd1104bf7ba9459bf6051d03849348))
+
 ## [0.0.10](https://github.com/bulla-network/bulla-cli/compare/v0.0.9...v0.0.10) (2026-03-19)
 
 
