@@ -27,7 +27,7 @@ const fetchJson = <T>(url: string, init?: RequestInit): Effect.Effect<T, Error> 
 
 export const BackendClientLive = Layer.succeed(BackendClientService, {
     getMessage: (wallet: string) =>
-        fetchJson<GetMessageResponse>(`${AUTH_BASE_URL}/auth/${wallet}/getMessage`),
+        fetchJson<GetMessageResponse>(`${AUTH_BASE_URL}/auth/${wallet}/message`),
 
     verifyMessage: (wallet: string, signature: string) =>
         fetchJson<VerifyMessageResponse>(`${AUTH_BASE_URL}/auth/${wallet}/verifyMessage`, {
