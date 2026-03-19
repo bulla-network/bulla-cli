@@ -37,9 +37,12 @@ const SIWE_MESSAGE = [
 // Mock HTTP server
 // ============================================================================
 
+const TEST_SAFE = '0x1234567890abcdef1234567890abcdef12345678';
+
 let mockServer: Server;
 let mockPort: number;
 let tmpDir: string;
+let lastRequestedUrl: string;
 
 /** Read the full request body as a string. */
 const readBody = (req: IncomingMessage): Promise<string> =>
@@ -53,16 +56,18 @@ const readBody = (req: IncomingMessage): Promise<string> =>
 const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const url = req.url ?? '';
     const method = req.method ?? 'GET';
+    lastRequestedUrl = url;
+    const pathname = url.split('?')[0];
 
     // GET /message/{wallet}
-    if (method === 'GET' && url.match(/^\/message\/0x[0-9a-fA-F]+$/)) {
+    if (method === 'GET' && pathname.match(/^\/message\/0x[0-9a-fA-F]+$/)) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: SIWE_MESSAGE }));
         return;
     }
 
     // POST /verify/{wallet}
-    if (method === 'POST' && url.match(/^\/verify\/0x[0-9a-fA-F]+$/)) {
+    if (method === 'POST' && pathname.match(/^\/verify\/0x[0-9a-fA-F]+$/)) {
         const signature = await readBody(req);
         const walletMatch = url.match(/\/verify\/(0x[0-9a-fA-F]+)$/);
         const wallet = walletMatch?.[1] ?? '';
@@ -93,7 +98,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
 
     // POST /underwrite/{wallet}/chain/{chainId}/pool/{poolAddress}
-    if (method === 'POST' && url.match(/^\/underwrite\/0x[0-9a-fA-F]+\/chain\/\d+\/pool\/0x[0-9a-fA-F]+$/)) {
+    if (method === 'POST' && pathname.match(/^\/underwrite\/0x[0-9a-fA-F]+\/chain\/\d+\/pool\/0x[0-9a-fA-F]+$/)) {
         const body = JSON.parse(await readBody(req)) as { claimIds: string[] };
         const results = body.claimIds.map((claimId) => ({
             claimId,
@@ -107,7 +112,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
 
     // POST /tapCredit/batch/{wallet}/chain/{chainId}/pool/{poolAddress}
-    if (method === 'POST' && url.match(/^\/tapCredit\/batch\/0x[0-9a-fA-F]+\/chain\/\d+\/pool\/0x[0-9a-fA-F]+$/)) {
+    if (method === 'POST' && pathname.match(/^\/tapCredit\/batch\/0x[0-9a-fA-F]+\/chain\/\d+\/pool\/0x[0-9a-fA-F]+$/)) {
         const body = JSON.parse(await readBody(req)) as { requests: unknown[] };
         const results = body.requests.map((_, index) => ({
             index,
@@ -249,6 +254,25 @@ describe('factoring underwrite', () => {
         expect(output).toContain('"status": "Ok"');
         expect(output).toContain('"txHash"');
     });
+
+    it('uses safe address in URL and adds account_type=gnosis when --safe-address is provided', async () => {
+        const result = await runCliAsync(
+            [
+                'factoring', 'underwrite',
+                '--auth-token', FAKE_JWT,
+                '--pool-address', TEST_POOL,
+                '--chain', TEST_CHAIN,
+                '--claim-ids', '1',
+                '--safe-address', TEST_SAFE,
+                '--format', 'json',
+            ],
+            mockEnv(),
+        );
+        expect(result.exitCode).toBe(0);
+        expect(lastRequestedUrl).toContain(`/underwrite/${TEST_SAFE}/`);
+        expect(lastRequestedUrl).not.toContain(TEST_WALLET);
+        expect(lastRequestedUrl).toContain('account_type=gnosis');
+    });
 });
 
 // ============================================================================
@@ -319,5 +343,30 @@ describe('factoring tap-credit', () => {
         expect(output).toContain('"index": 1');
         expect(output).toContain('"status": "Ok"');
         expect(output).toContain('"txHash"');
+    });
+
+    it('uses safe address in URL and adds account_type=gnosis when --safe-address is provided', async () => {
+        const requestsFile = join(tmpDir, 'requests-safe.json');
+        writeFileSync(
+            requestsFile,
+            JSON.stringify([{ description: 'Safe Invoice', dueBy: 1700000000, amount: '500000' }]),
+        );
+
+        const result = await runCliAsync(
+            [
+                'factoring', 'tap-credit',
+                '--auth-token', FAKE_JWT,
+                '--pool-address', TEST_POOL,
+                '--chain', TEST_CHAIN,
+                '--requests-file', requestsFile,
+                '--safe-address', TEST_SAFE,
+                '--format', 'json',
+            ],
+            mockEnv(),
+        );
+        expect(result.exitCode).toBe(0);
+        expect(lastRequestedUrl).toContain(`/tapCredit/batch/${TEST_SAFE}/`);
+        expect(lastRequestedUrl).not.toContain(TEST_WALLET);
+        expect(lastRequestedUrl).toContain('account_type=gnosis');
     });
 });

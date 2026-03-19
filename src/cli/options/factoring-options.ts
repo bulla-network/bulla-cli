@@ -56,3 +56,8 @@ export const claimIdsOption = Options.text('claim-ids').pipe(
 export const requestsFileOption = Options.text('requests-file').pipe(
     Options.withDescription('Path to JSON file containing tap-credit requests array'),
 );
+
+export const safeAddressOption = Options.text('safe-address').pipe(
+    Options.withDescription('Safe multisig address to act on behalf of (JWT signer must be a signer of the safe)'),
+    Options.optional,
+);

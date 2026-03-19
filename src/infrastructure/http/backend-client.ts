@@ -36,19 +36,11 @@ export const BackendClientLive = Layer.succeed(BackendClientService, {
             body: signature,
         }),
 
-    underwrite: (authToken: string, wallet: string, chainId: number, poolAddress: string, body: UnderwriteRequest) =>
-        fetchJson<UnderwriteResponse>(`${UNDERWRITER_BASE_URL}/underwrite/${wallet}/chain/${chainId}/pool/${poolAddress}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        }),
-
-    tapCredit: (authToken: string, wallet: string, chainId: number, poolAddress: string, body: TapCreditRequest) =>
-        fetchJson<TapCreditResponse>(
-            `${UNDERWRITER_BASE_URL}/tapCredit/batch/${wallet}/chain/${chainId}/pool/${poolAddress}`,
+    underwrite: (authToken: string, wallet: string, chainId: number, poolAddress: string, body: UnderwriteRequest, isSafe?: boolean) => {
+        const params = new URLSearchParams({ isV2: 'true' });
+        if (isSafe) params.set('account_type', 'gnosis');
+        return fetchJson<UnderwriteResponse>(
+            `${UNDERWRITER_BASE_URL}/underwrite/${wallet}/chain/${chainId}/pool/${poolAddress}?${params}`,
             {
                 method: 'POST',
                 headers: {
@@ -57,5 +49,21 @@ export const BackendClientLive = Layer.succeed(BackendClientService, {
                 },
                 body: JSON.stringify(body),
             },
-        ),
+        );
+    },
+
+    tapCredit: (authToken: string, wallet: string, chainId: number, poolAddress: string, body: TapCreditRequest, isSafe?: boolean) => {
+        const params = isSafe ? '?account_type=gnosis' : '';
+        return fetchJson<TapCreditResponse>(
+            `${UNDERWRITER_BASE_URL}/tapCredit/batch/${wallet}/chain/${chainId}/pool/${poolAddress}${params}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body),
+            },
+        );
+    },
 });
