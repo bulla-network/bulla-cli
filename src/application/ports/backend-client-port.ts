@@ -26,6 +26,7 @@ export interface BackendClientService {
         chainId: number,
         poolAddress: string,
         body: UnderwriteRequest,
+        isSafe?: boolean,
     ) => Effect.Effect<UnderwriteResponse, Error>;
 
     /** POST /tapCredit/batch/{wallet}/chain/{chainId}/pool/{poolAddress} — batch tap-credit. */
@@ -35,6 +36,7 @@ export interface BackendClientService {
         chainId: number,
         poolAddress: string,
         body: TapCreditRequest,
+        isSafe?: boolean,
     ) => Effect.Effect<TapCreditResponse, Error>;
 }
 

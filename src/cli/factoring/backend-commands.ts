@@ -1,6 +1,6 @@
 import { Command } from '@effect/cli';
 import { readFileSync } from 'node:fs';
-import { Console, Effect } from 'effect';
+import { Console, Effect, Option } from 'effect';
 import { privateKeyToAccount } from 'viem/accounts';
 import { BackendClientService } from '../../application/ports/backend-client-port.js';
 import type { TapCreditRequestItem } from '../../domain/types/backend.js';
@@ -10,7 +10,7 @@ import type { OutputFormat } from '../formatters/index.js';
 import { formatViewResult } from '../formatters/view.js';
 import { chainOption, formatOption } from '../options/common.js';
 import { getChainId } from '../options/common.js';
-import { authTokenOption, claimIdsOption, poolAddressOption, requestsFileOption } from '../options/factoring-options.js';
+import { authTokenOption, claimIdsOption, poolAddressOption, requestsFileOption, safeAddressOption } from '../options/factoring-options.js';
 import { privateKeyOption } from '../options/pay-options.js';
 
 // ============================================================================
@@ -75,10 +75,13 @@ const underwriteCommand = Command.make(
         chain: chainOption,
         claimIds: claimIdsOption,
         format: formatOption,
+        safeAddress: safeAddressOption,
     },
-    ({ authToken, poolAddress, chain, claimIds, format }) =>
+    ({ authToken, poolAddress, chain, claimIds, format, safeAddress }) =>
         Effect.gen(function* () {
-            const wallet = extractWalletFromJwt(authToken);
+            const jwtWallet = extractWalletFromJwt(authToken);
+            const isSafe = Option.isSome(safeAddress);
+            const wallet = Option.getOrElse(safeAddress, () => jwtWallet);
             const chainId = yield* getChainId(chain, undefined);
 
             const client = yield* BackendClientService;
@@ -86,7 +89,7 @@ const underwriteCommand = Command.make(
 
             const response = yield* client.underwrite(authToken, wallet, chainId, poolAddress, {
                 claimIds: claimIdList,
-            });
+            }, isSafe);
 
             for (const result of response.results) {
                 yield* Console.log(
@@ -116,10 +119,13 @@ const tapCreditCommand = Command.make(
         chain: chainOption,
         requestsFile: requestsFileOption,
         format: formatOption,
+        safeAddress: safeAddressOption,
     },
-    ({ authToken, poolAddress, chain, requestsFile, format }) =>
+    ({ authToken, poolAddress, chain, requestsFile, format, safeAddress }) =>
         Effect.gen(function* () {
-            const wallet = extractWalletFromJwt(authToken);
+            const jwtWallet = extractWalletFromJwt(authToken);
+            const isSafe = Option.isSome(safeAddress);
+            const wallet = Option.getOrElse(safeAddress, () => jwtWallet);
             const chainId = yield* getChainId(chain, undefined);
 
             // Read and parse the requests file
@@ -135,7 +141,7 @@ const tapCreditCommand = Command.make(
 
             const client = yield* BackendClientService;
 
-            const response = yield* client.tapCredit(authToken, wallet, chainId, poolAddress, { requests });
+            const response = yield* client.tapCredit(authToken, wallet, chainId, poolAddress, { requests }, isSafe);
 
             for (const result of response.results) {
                 yield* Console.log(
