@@ -54,17 +54,17 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const url = req.url ?? '';
     const method = req.method ?? 'GET';
 
-    // GET /auth/{wallet}/getMessage
-    if (method === 'GET' && url.match(/^\/auth\/0x[0-9a-fA-F]+\/getMessage$/)) {
+    // GET /message/{wallet}
+    if (method === 'GET' && url.match(/^\/message\/0x[0-9a-fA-F]+$/)) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: SIWE_MESSAGE }));
         return;
     }
 
-    // POST /auth/{wallet}/verifyMessage
-    if (method === 'POST' && url.match(/^\/auth\/0x[0-9a-fA-F]+\/verifyMessage$/)) {
+    // POST /verify/{wallet}
+    if (method === 'POST' && url.match(/^\/verify\/0x[0-9a-fA-F]+$/)) {
         const signature = await readBody(req);
-        const walletMatch = url.match(/\/auth\/(0x[0-9a-fA-F]+)\//);
+        const walletMatch = url.match(/\/verify\/(0x[0-9a-fA-F]+)$/);
         const wallet = walletMatch?.[1] ?? '';
 
         // Actually verify the SIWE signature

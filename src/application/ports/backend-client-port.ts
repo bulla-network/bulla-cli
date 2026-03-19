@@ -13,10 +13,10 @@ import type {
  * Covers authentication, underwriting, and tap-credit flows.
  */
 export interface BackendClientService {
-    /** GET /auth/{wallet}/getMessage — fetch SIWE challenge message. */
+    /** GET /message/{wallet} — fetch SIWE challenge message. */
     readonly getMessage: (wallet: string) => Effect.Effect<GetMessageResponse, Error>;
 
-    /** POST /auth/{wallet}/verifyMessage — submit signed message and receive JWT. */
+    /** POST /verify/{wallet} — submit signed message and receive JWT. */
     readonly verifyMessage: (wallet: string, signature: string) => Effect.Effect<VerifyMessageResponse, Error>;
 
     /** POST /underwrite/{wallet}/chain/{chainId}/pool/{poolAddress} — underwrite claims. */
