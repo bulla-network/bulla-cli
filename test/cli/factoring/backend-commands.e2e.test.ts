@@ -61,8 +61,8 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         return;
     }
 
-    // POST /auth/{wallet}/verifyMessage
-    if (method === 'POST' && url.match(/^\/auth\/0x[0-9a-fA-F]+\/verifyMessage$/)) {
+    // POST /verify/{wallet}
+    if (method === 'POST' && url.match(/^\/verify\/0x[0-9a-fA-F]+$/)) {
         const signature = await readBody(req);
         const walletMatch = url.match(/\/auth\/(0x[0-9a-fA-F]+)\//);
         const wallet = walletMatch?.[1] ?? '';
