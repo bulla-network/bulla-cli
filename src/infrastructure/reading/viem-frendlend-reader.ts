@@ -190,6 +190,111 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
 
                         return { remainingPrincipal: result[0], grossInterest: result[1] };
                     }),
+
+                getLoans: (chainId: ChainId, claimIds: bigint[]) =>
+                    Effect.gen(function* () {
+                        const contractAddress = yield* registry.getFrendLendAddress(chainId);
+                        const chain = chainMap[chainId];
+                        const client = createPublicClient({ chain, transport: http(rpcUrl) });
+
+                        const results = yield* Effect.tryPromise({
+                            try: () =>
+                                client.multicall({
+                                    contracts: claimIds.map(claimId => ({
+                                        address: contractAddress as Hex,
+                                        abi: bullaFrendLendV2Abi,
+                                        functionName: 'getLoan' as const,
+                                        args: [claimId] as const,
+                                    })),
+                                    allowFailure: false,
+                                }),
+                            catch: err =>
+                                new LoanNotFoundError({
+                                    chainId,
+                                    claimId: claimIds[0]!,
+                                    message: `Failed to batch-read loans on chain ${chainId}: ${err}`,
+                                }),
+                        });
+
+                        return results.map((r, i) => {
+                            if (r.creditor === zeroAddress && r.debtor === zeroAddress) {
+                                throw new LoanNotFoundError({
+                                    chainId,
+                                    claimId: claimIds[i]!,
+                                    message: `Loan with claim ID ${claimIds[i]!} does not exist on chain ${chainId}`,
+                                });
+                            }
+                            return {
+                                claimAmount: r.claimAmount,
+                                paidAmount: r.paidAmount,
+                                status: r.status,
+                                binding: r.binding,
+                                debtor: r.debtor.toLowerCase() as EthAddress,
+                                creditor: r.creditor.toLowerCase() as EthAddress,
+                                token: r.token.toLowerCase() as EthAddress,
+                                controller: r.controller.toLowerCase() as EthAddress,
+                                dueBy: r.dueBy,
+                                acceptedAt: r.acceptedAt,
+                                interestConfig: {
+                                    interestRateBps: r.interestConfig.interestRateBps,
+                                    numberOfPeriodsPerYear: r.interestConfig.numberOfPeriodsPerYear,
+                                },
+                                interestComputationState: {
+                                    accruedInterest: r.interestComputationState.accruedInterest,
+                                    latestPeriodNumber: r.interestComputationState.latestPeriodNumber,
+                                    protocolFeeBps: r.interestComputationState.protocolFeeBps,
+                                    totalGrossInterestPaid: r.interestComputationState.totalGrossInterestPaid,
+                                },
+                            } satisfies LoanOnChain;
+                        });
+                    }),
+
+                getTotalAmountsDue: (chainId: ChainId, claimIds: bigint[]) =>
+                    Effect.gen(function* () {
+                        const contractAddress = yield* registry.getFrendLendAddress(chainId);
+                        const chain = chainMap[chainId];
+                        const client = createPublicClient({ chain, transport: http(rpcUrl) });
+
+                        // Batch getLoan (validation) + getTotalAmountDue for each claim in one multicall
+                        const contracts = claimIds.flatMap(claimId => [
+                            {
+                                address: contractAddress as Hex,
+                                abi: bullaFrendLendV2Abi,
+                                functionName: 'getLoan' as const,
+                                args: [claimId] as const,
+                            },
+                            {
+                                address: contractAddress as Hex,
+                                abi: bullaFrendLendV2Abi,
+                                functionName: 'getTotalAmountDue' as const,
+                                args: [claimId] as const,
+                            },
+                        ]);
+
+                        const results = yield* Effect.tryPromise({
+                            try: () => client.multicall({ contracts, allowFailure: false }),
+                            catch: err =>
+                                new LoanNotFoundError({
+                                    chainId,
+                                    claimId: claimIds[0]!,
+                                    message: `Failed to batch-read total amounts due on chain ${chainId}: ${err}`,
+                                }),
+                        });
+
+                        // Results interleaved: [loan0, due0, loan1, due1, ...]
+                        return claimIds.map((claimId, i) => {
+                            const loan = results[i * 2] as { creditor: string; debtor: string };
+                            if (loan.creditor === zeroAddress && loan.debtor === zeroAddress) {
+                                throw new LoanNotFoundError({
+                                    chainId,
+                                    claimId,
+                                    message: `Loan with claim ID ${claimId} does not exist on chain ${chainId}`,
+                                });
+                            }
+                            const due = results[i * 2 + 1] as readonly [bigint, bigint];
+                            return { remainingPrincipal: due[0], grossInterest: due[1] };
+                        });
+                    }),
             };
         }),
     );

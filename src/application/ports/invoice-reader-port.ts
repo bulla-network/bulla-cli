@@ -17,6 +17,32 @@ export interface InvoiceReaderService {
         chainId: ChainId,
         claimId: bigint,
     ): Effect.Effect<bigint, InvoiceNotFoundError | UnsupportedChainError | ContractNotFoundError>;
+
+    getTotalAmountDue(
+        chainId: ChainId,
+        claimId: bigint,
+    ): Effect.Effect<
+        { remainingPrincipal: bigint; grossInterest: bigint },
+        InvoiceNotFoundError | UnsupportedChainError | ContractNotFoundError
+    >;
+
+    getInvoices(
+        chainId: ChainId,
+        claimIds: bigint[],
+    ): Effect.Effect<InvoiceOnChain[], InvoiceNotFoundError | UnsupportedChainError | ContractNotFoundError>;
+
+    getDepositAmountsNeeded(
+        chainId: ChainId,
+        claimIds: bigint[],
+    ): Effect.Effect<bigint[], InvoiceNotFoundError | UnsupportedChainError | ContractNotFoundError>;
+
+    getTotalAmountsDue(
+        chainId: ChainId,
+        claimIds: bigint[],
+    ): Effect.Effect<
+        { remainingPrincipal: bigint; grossInterest: bigint }[],
+        InvoiceNotFoundError | UnsupportedChainError | ContractNotFoundError
+    >;
 }
 
 export const InvoiceReaderService = Context.GenericTag<InvoiceReaderService>('@services/InvoiceReaderService');

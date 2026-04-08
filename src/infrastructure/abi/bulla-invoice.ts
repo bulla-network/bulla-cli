@@ -209,4 +209,14 @@ export const bullaInvoiceAbi = [
         stateMutability: 'nonpayable',
         type: 'function',
     },
+    {
+        inputs: [{ internalType: 'uint256', name: 'claimId', type: 'uint256' }],
+        name: 'getTotalAmountDue',
+        outputs: [
+            { internalType: 'uint256', name: 'remainingPrincipal', type: 'uint256' },
+            { internalType: 'uint256', name: 'grossInterest', type: 'uint256' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
 ] as const;

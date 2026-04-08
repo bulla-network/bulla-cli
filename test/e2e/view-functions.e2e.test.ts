@@ -153,7 +153,7 @@ describe.skipIf(!forkUrl)('view functions (e2e)', () => {
                 'frendlend', 'get-loan',
                 '--rpc-url', anvil.rpcUrl,
                 '--chain', String(SEPOLIA_CHAIN_ID),
-                '--claim-id', '9999',
+                '--claim-ids', '9999',
                 '--format', 'json',
             ]);
             expect(result.exitCode).toBeGreaterThanOrEqual(1);
@@ -175,7 +175,7 @@ describe.skipIf(!forkUrl)('view functions (e2e)', () => {
                 'frendlend', 'total-due',
                 '--rpc-url', anvil.rpcUrl,
                 '--chain', String(SEPOLIA_CHAIN_ID),
-                '--claim-id', '9999',
+                '--claim-ids', '9999',
                 '--format', 'json',
             ]);
             expect(result.exitCode).toBeGreaterThanOrEqual(1);
@@ -185,7 +185,7 @@ describe.skipIf(!forkUrl)('view functions (e2e)', () => {
             const result = runCli([
                 'frendlend', 'get-loan',
                 '--rpc-url', anvil.rpcUrl,
-                '--claim-id', '9999',
+                '--claim-ids', '9999',
                 '--format', 'json',
             ]);
             // Chain should be auto-detected from the RPC, not fail with missing chain error
