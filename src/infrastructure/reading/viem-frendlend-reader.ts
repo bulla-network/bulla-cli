@@ -145,33 +145,6 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                             transport: http(rpcUrl),
                         });
 
-                        // First verify the loan exists (contract returns zeroed data for non-existent claims)
-                        const loan = yield* Effect.tryPromise({
-                            try: () =>
-                                client.readContract({
-                                    address: contractAddress as Hex,
-                                    abi: bullaFrendLendV2Abi,
-                                    functionName: 'getLoan',
-                                    args: [claimId],
-                                }),
-                            catch: err =>
-                                new LoanNotFoundError({
-                                    chainId,
-                                    claimId,
-                                    message: `Failed to read loan ${claimId} on chain ${chainId}: ${err}`,
-                                }),
-                        });
-
-                        if (loan.creditor === zeroAddress && loan.debtor === zeroAddress) {
-                            return yield* Effect.fail(
-                                new LoanNotFoundError({
-                                    chainId,
-                                    claimId,
-                                    message: `Loan with claim ID ${claimId} does not exist on chain ${chainId}`,
-                                }),
-                            );
-                        }
-
                         const result = yield* Effect.tryPromise({
                             try: () =>
                                 client.readContract({
@@ -255,24 +228,17 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                         const chain = chainMap[chainId];
                         const client = createPublicClient({ chain, transport: http(rpcUrl) });
 
-                        // Batch getLoan (validation) + getTotalAmountDue for each claim in one multicall
-                        const contracts = claimIds.flatMap(claimId => [
-                            {
-                                address: contractAddress as Hex,
-                                abi: bullaFrendLendV2Abi,
-                                functionName: 'getLoan' as const,
-                                args: [claimId] as const,
-                            },
-                            {
-                                address: contractAddress as Hex,
-                                abi: bullaFrendLendV2Abi,
-                                functionName: 'getTotalAmountDue' as const,
-                                args: [claimId] as const,
-                            },
-                        ]);
-
                         const results = yield* Effect.tryPromise({
-                            try: () => client.multicall({ contracts, allowFailure: false }),
+                            try: () =>
+                                client.multicall({
+                                    contracts: claimIds.map(claimId => ({
+                                        address: contractAddress as Hex,
+                                        abi: bullaFrendLendV2Abi,
+                                        functionName: 'getTotalAmountDue' as const,
+                                        args: [claimId] as const,
+                                    })),
+                                    allowFailure: false,
+                                }),
                             catch: err =>
                                 new LoanNotFoundError({
                                     chainId,
@@ -281,19 +247,10 @@ export const makeFrendLendReaderLayer = (rpcUrl: string) =>
                                 }),
                         });
 
-                        // Results interleaved: [loan0, due0, loan1, due1, ...]
-                        return claimIds.map((claimId, i) => {
-                            const loan = results[i * 2] as { creditor: string; debtor: string };
-                            if (loan.creditor === zeroAddress && loan.debtor === zeroAddress) {
-                                throw new LoanNotFoundError({
-                                    chainId,
-                                    claimId,
-                                    message: `Loan with claim ID ${claimId} does not exist on chain ${chainId}`,
-                                });
-                            }
-                            const due = results[i * 2 + 1] as readonly [bigint, bigint];
-                            return { remainingPrincipal: due[0], grossInterest: due[1] };
-                        });
+                        return results.map(r => ({
+                            remainingPrincipal: r[0],
+                            grossInterest: r[1],
+                        }));
                     }),
             };
         }),
