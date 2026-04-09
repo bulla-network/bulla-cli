@@ -1,3 +1,15 @@
+## [0.0.12](https://github.com/bulla-network/bulla-cli/compare/v0.0.11...v0.0.12) (2026-04-09)
+
+
+### Bug Fixes
+
+* remove redundant getLoan calls from getTotalAmountDue ([5d4c4e8](https://github.com/bulla-network/bulla-cli/commit/5d4c4e8ff3470bacf27afbf9f3a4adc9ee989c16))
+
+
+### Features
+
+* add getTotalAmountDue and multicall batching for view commands ([3cdea02](https://github.com/bulla-network/bulla-cli/commit/3cdea02358b90dc3b7113ecc89355c1e552cecbc))
+
 ## [0.0.11](https://github.com/bulla-network/bulla-cli/compare/v0.0.10...v0.0.11) (2026-03-19)
 
 
