@@ -3,6 +3,12 @@ import { Options } from '@effect/cli';
 // Common invoice options
 export const claimIdOption = Options.integer('claim-id').pipe(Options.withDescription('The ID of the invoice/claim'));
 
+export const claimIdsOption = Options.text('claim-ids').pipe(
+    Options.withDescription('Comma-separated claim IDs (e.g. 1,2,3)'),
+);
+
+export const parseClaimIds = (raw: string): bigint[] => raw.split(',').map(id => BigInt(id.trim()));
+
 export const debtorOption = Options.text('debtor').pipe(Options.withDescription('The debtor address (who owes the payment)'));
 
 export const creditorOption = Options.text('creditor').pipe(Options.withDescription('The creditor address (who receives the payment)'));

@@ -20,3 +20,8 @@ export const formatViewResult = (data: Record<string, unknown>, format: OutputFo
     }
     return lines.join('\n');
 };
+
+export const formatViewResults = (data: Record<string, unknown>[], format: OutputFormat): string => {
+    if (format === 'json') return JSON.stringify(data, bigintReplacer, 2);
+    return data.map((d, i) => `--- Result ${i + 1} ---\n${formatViewResult(d, format)}`).join('\n\n');
+};

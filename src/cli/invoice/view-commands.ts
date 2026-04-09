@@ -2,10 +2,10 @@ import { Command } from '@effect/cli';
 import { Console, Effect } from 'effect';
 import { InvoiceReaderService } from '../../application/ports/invoice-reader-port.js';
 import { makeReaderLayer } from '../../infrastructure/layers.js';
-import { formatViewResult } from '../formatters/view.js';
+import { formatViewResult, formatViewResults } from '../formatters/view.js';
 import type { OutputFormat } from '../formatters/index.js';
 import { chainOption, formatOption, getChainId, requiredRpcUrlOption } from '../options/common.js';
-import { claimIdOption } from '../options/invoice-options.js';
+import { claimIdsOption, parseClaimIds } from '../options/invoice-options.js';
 
 // ============================================================================
 // GET INVOICE
@@ -16,23 +16,25 @@ export const invoiceGetCommand = Command.make(
     {
         chain: chainOption,
         rpcUrl: requiredRpcUrlOption,
-        claimId: claimIdOption,
+        claimIds: claimIdsOption,
         format: formatOption,
     },
-    ({ chain, rpcUrl, claimId, format }) =>
+    ({ chain, rpcUrl, claimIds: rawIds, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
             if (!chainId) return;
 
+            const ids = parseClaimIds(rawIds);
             const readerLayer = makeReaderLayer(rpcUrl);
-            const result = yield* InvoiceReaderService.pipe(
-                Effect.flatMap(reader => reader.getInvoice(chainId, BigInt(claimId))),
+            const results = yield* InvoiceReaderService.pipe(
+                Effect.flatMap(reader => reader.getInvoices(chainId, ids)),
                 Effect.provide(readerLayer),
             );
 
-            yield* Console.log(formatViewResult(result as unknown as Record<string, unknown>, format as OutputFormat));
+            const data = results.map((r, i) => ({ claimId: ids[i]!.toString(), ...r }) as unknown as Record<string, unknown>);
+            yield* Console.log(data.length === 1 ? formatViewResult(data[0]!, format as OutputFormat) : formatViewResults(data, format as OutputFormat));
         }),
-).pipe(Command.withDescription('Read an invoice from on-chain by claim ID'));
+).pipe(Command.withDescription('Read invoice(s) from on-chain by claim ID(s)'));
 
 // ============================================================================
 // GET DEPOSIT NEEDED
@@ -43,28 +45,69 @@ export const invoiceDepositNeededCommand = Command.make(
     {
         chain: chainOption,
         rpcUrl: requiredRpcUrlOption,
-        claimId: claimIdOption,
+        claimIds: claimIdsOption,
         format: formatOption,
     },
-    ({ chain, rpcUrl, claimId, format }) =>
+    ({ chain, rpcUrl, claimIds: rawIds, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
             if (!chainId) return;
 
+            const ids = parseClaimIds(rawIds);
             const readerLayer = makeReaderLayer(rpcUrl);
-            const amount = yield* InvoiceReaderService.pipe(
-                Effect.flatMap(reader => reader.getTotalAmountNeededForPurchaseOrderDeposit(chainId, BigInt(claimId))),
+            const amounts = yield* InvoiceReaderService.pipe(
+                Effect.flatMap(reader => reader.getDepositAmountsNeeded(chainId, ids)),
                 Effect.provide(readerLayer),
             );
 
+            const data = amounts.map((amount, i) => ({ claimId: ids[i]!.toString(), depositAmountNeeded: amount }));
             yield* Console.log(
-                formatViewResult({ claimId, depositAmountNeeded: amount }, format as OutputFormat),
+                data.length === 1
+                    ? formatViewResult(data[0]!, format as OutputFormat)
+                    : formatViewResults(data, format as OutputFormat),
             );
         }),
-).pipe(Command.withDescription('Get the total amount needed for a purchase order deposit'));
+).pipe(Command.withDescription('Get the total amount needed for purchase order deposit(s)'));
+
+// ============================================================================
+// TOTAL AMOUNT DUE
+// ============================================================================
+
+export const invoiceTotalDueCommand = Command.make(
+    'total-due',
+    {
+        chain: chainOption,
+        rpcUrl: requiredRpcUrlOption,
+        claimIds: claimIdsOption,
+        format: formatOption,
+    },
+    ({ chain, rpcUrl, claimIds: rawIds, format }) =>
+        Effect.gen(function* () {
+            const chainId = yield* getChainId(chain, rpcUrl);
+            if (!chainId) return;
+
+            const ids = parseClaimIds(rawIds);
+            const readerLayer = makeReaderLayer(rpcUrl);
+            const results = yield* InvoiceReaderService.pipe(
+                Effect.flatMap(reader => reader.getTotalAmountsDue(chainId, ids)),
+                Effect.provide(readerLayer),
+            );
+
+            const data = results.map((r, i) => ({
+                claimId: ids[i]!.toString(),
+                remainingPrincipal: r.remainingPrincipal.toString(),
+                grossInterest: r.grossInterest.toString(),
+            }));
+            yield* Console.log(
+                data.length === 1
+                    ? formatViewResult(data[0]!, format as OutputFormat)
+                    : formatViewResults(data, format as OutputFormat),
+            );
+        }),
+).pipe(Command.withDescription('Get the total amount due (remaining principal + gross interest) for invoice(s)'));
 
 // ============================================================================
 // EXPORT VIEW COMMANDS
 // ============================================================================
 
-export const invoiceViewCommands = [invoiceGetCommand, invoiceDepositNeededCommand] as const;
+export const invoiceViewCommands = [invoiceGetCommand, invoiceDepositNeededCommand, invoiceTotalDueCommand] as const;

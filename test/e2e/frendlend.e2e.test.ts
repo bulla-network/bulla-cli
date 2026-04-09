@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runCliExecute } from './helpers/cli-runner.js';
+import { runCli, runCliExecute } from './helpers/cli-runner.js';
 import { approveCreateClaim, WETH_ADDRESS, wrapEthAndApprove } from './helpers/erc20-setup.js';
-import { getOfferIdFromReceipt } from './helpers/receipt-parser.js';
+import { getNewTokenIdFromReceipt, getOfferIdFromReceipt } from './helpers/receipt-parser.js';
 import { type AnvilInstance, startAnvil } from './setup/anvil.js';
 import { ANVIL_ACCOUNTS, CONTRACTS, SEPOLIA_CHAIN_ID } from './setup/constants.js';
 
@@ -119,8 +119,9 @@ describe.skipIf(!forkUrl)('bulla frendlend (e2e)', () => {
         });
     });
 
-    describe('loan lifecycle: offer -> accept', () => {
+    describe('loan lifecycle: offer -> accept -> total-due', () => {
         let offerId: bigint;
+        let claimId: bigint;
 
         it('creates a loan offer', async () => {
             const result = runCliExecute([
@@ -155,7 +156,7 @@ describe.skipIf(!forkUrl)('bulla frendlend (e2e)', () => {
             offerId = await getOfferIdFromReceipt(anvil.rpcUrl, result.txHash as `0x${string}`);
         });
 
-        it('accepts the loan offer', () => {
+        it('accepts the loan offer', async () => {
             const result = runCliExecute([
                 'frendlend',
                 'accept-loan',
@@ -171,6 +172,22 @@ describe.skipIf(!forkUrl)('bulla frendlend (e2e)', () => {
             ]);
 
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            claimId = await getNewTokenIdFromReceipt(anvil.rpcUrl, result.txHash as `0x${string}`);
+            expect(claimId).toBeGreaterThan(0n);
+        });
+
+        it('returns total amount due for the accepted loan', () => {
+            const result = runCli([
+                'frendlend', 'total-due',
+                '--rpc-url', anvil.rpcUrl,
+                '--chain', String(SEPOLIA_CHAIN_ID),
+                '--claim-ids', String(claimId),
+                '--format', 'json',
+            ]);
+            expect(result.exitCode).toBe(0);
+            const parsed = JSON.parse(result.stdout);
+            expect(parsed).toHaveProperty('remainingPrincipal');
+            expect(parsed).toHaveProperty('grossInterest');
         });
     });
 });

@@ -5,7 +5,7 @@ import { BuildModeLayers, makeFrendLendReader } from '../../infrastructure/layer
 import type { OutputFormat } from '../formatters/index.js';
 import { chainOption, formatOption, getChainId, requiredRpcUrlOption } from '../options/common.js';
 import { offerIdOption } from '../options/frendlend-options.js';
-import { claimIdOption } from '../options/invoice-options.js';
+import { claimIdsOption, parseClaimIds } from '../options/invoice-options.js';
 import type { LoanOfferOnChain, LoanOnChain } from '../../domain/types/frendlend.js';
 
 // ============================================================================
@@ -38,6 +38,11 @@ const formatLoanAsHuman = (loan: LoanOnChain): string => {
     ];
     return lines.join('\n');
 };
+
+const formatLoansAsJson = (loans: LoanOnChain[]): string => JSON.stringify(loans, bigintReplacer, 2);
+
+const formatLoansAsHuman = (loans: LoanOnChain[]): string =>
+    loans.map(loan => formatLoanAsHuman(loan)).join('\n\n');
 
 const formatLoanOfferAsJson = (offer: LoanOfferOnChain): string => JSON.stringify(offer, bigintReplacer, 2);
 
@@ -74,6 +79,12 @@ const formatTotalDueAsHuman = (data: { remainingPrincipal: bigint; grossInterest
     return lines.join('\n');
 };
 
+const formatTotalDuesAsJson = (data: { remainingPrincipal: bigint; grossInterest: bigint }[]): string =>
+    JSON.stringify(data, bigintReplacer, 2);
+
+const formatTotalDuesAsHuman = (data: { remainingPrincipal: bigint; grossInterest: bigint }[]): string =>
+    data.map(d => formatTotalDueAsHuman(d)).join('\n\n');
+
 // ============================================================================
 // GET LOAN
 // ============================================================================
@@ -83,20 +94,24 @@ export const frendlendGetLoanCommand = Command.make(
     {
         chain: chainOption,
         rpcUrl: requiredRpcUrlOption,
-        claimId: claimIdOption,
+        claimIds: claimIdsOption,
         format: formatOption,
     },
-    ({ chain, rpcUrl, claimId, format }) =>
+    ({ chain, rpcUrl, claimIds: rawIds, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
+            const ids = parseClaimIds(rawIds);
             const readerLayer = Layer.provide(makeFrendLendReader(rpcUrl), BuildModeLayers);
             const reader = yield* FrendLendReaderService.pipe(Effect.provide(readerLayer));
-            const loan = yield* reader.getLoan(chainId, BigInt(claimId));
+            const loans = yield* reader.getLoans(chainId, ids);
 
-            const output = format === 'json' ? formatLoanAsJson(loan) : formatLoanAsHuman(loan);
+            const output =
+                loans.length === 1
+                    ? format === 'json' ? formatLoanAsJson(loans[0]!) : formatLoanAsHuman(loans[0]!)
+                    : format === 'json' ? formatLoansAsJson(loans) : formatLoansAsHuman(loans);
             yield* Console.log(output);
         }),
-).pipe(Command.withDescription('Read loan details from on-chain by claim ID'));
+).pipe(Command.withDescription('Read loan details from on-chain by claim ID(s)'));
 
 // ============================================================================
 // GET OFFER
@@ -131,20 +146,24 @@ export const frendlendTotalDueCommand = Command.make(
     {
         chain: chainOption,
         rpcUrl: requiredRpcUrlOption,
-        claimId: claimIdOption,
+        claimIds: claimIdsOption,
         format: formatOption,
     },
-    ({ chain, rpcUrl, claimId, format }) =>
+    ({ chain, rpcUrl, claimIds: rawIds, format }) =>
         Effect.gen(function* () {
             const chainId = yield* getChainId(chain, rpcUrl);
+            const ids = parseClaimIds(rawIds);
             const readerLayer = Layer.provide(makeFrendLendReader(rpcUrl), BuildModeLayers);
             const reader = yield* FrendLendReaderService.pipe(Effect.provide(readerLayer));
-            const totalDue = yield* reader.getTotalAmountDue(chainId, BigInt(claimId));
+            const results = yield* reader.getTotalAmountsDue(chainId, ids);
 
-            const output = format === 'json' ? formatTotalDueAsJson(totalDue) : formatTotalDueAsHuman(totalDue);
+            const output =
+                results.length === 1
+                    ? format === 'json' ? formatTotalDueAsJson(results[0]!) : formatTotalDueAsHuman(results[0]!)
+                    : format === 'json' ? formatTotalDuesAsJson(results) : formatTotalDuesAsHuman(results);
             yield* Console.log(output);
         }),
-).pipe(Command.withDescription('Read the total amount due (remaining principal + gross interest) for a loan'));
+).pipe(Command.withDescription('Read the total amount due (remaining principal + gross interest) for loan(s)'));
 
 // ============================================================================
 // EXPORT ALL VIEW COMMANDS
