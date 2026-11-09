@@ -14,7 +14,7 @@ A TypeScript CLI for the [Bulla Protocol](https://bulla.network) — build and s
 
 ## Who is this for?
 
-- **AI agents** that prefer CLI over browser-based workflows
+- **AI agents** that prefer a CLI over browser-based workflows
 - **Scripts and automation** — integrate Bulla payments into CI/CD, cron jobs, or custom tooling
 - **Power users** who want to skip the Web UI and backend auth entirely
 - **Multisig workflows** — generate unsigned transaction payloads for Safe multi-send batches
