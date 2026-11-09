@@ -1,6 +1,7 @@
 import { createPublicClient, createWalletClient, http, maxUint64, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
+import { waitForSuccess } from './tx.js';
 
 /** Sepolia WETH9 address */
 export const WETH_ADDRESS = '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9' as const;
@@ -40,7 +41,7 @@ export async function wrapEthAndApprove(rpcUrl: string, privateKey: `0x${string}
         functionName: 'deposit',
         value: amount,
     });
-    await pub.waitForTransactionReceipt({ hash: depositHash });
+    await waitForSuccess(pub, depositHash, 'WETH deposit');
 
     // Approve the spender to use our WETH
     const approveHash = await wallet.writeContract({
@@ -49,7 +50,7 @@ export async function wrapEthAndApprove(rpcUrl: string, privateKey: `0x${string}
         functionName: 'approve',
         args: [spender, amount * 10n],
     });
-    await pub.waitForTransactionReceipt({ hash: approveHash });
+    await waitForSuccess(pub, approveHash, `WETH approve ${spender}`);
 }
 
 /**
@@ -65,5 +66,5 @@ export async function approveCreateClaim(rpcUrl: string, privateKey: `0x${string
         functionName: 'approveCreateClaim',
         args: [controller, 3, maxUint64, true],
     });
-    await pub.waitForTransactionReceipt({ hash: hash });
+    await waitForSuccess(pub, hash, `approveCreateClaim ${controller}`);
 }

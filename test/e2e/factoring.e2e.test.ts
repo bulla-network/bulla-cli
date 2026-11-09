@@ -8,6 +8,7 @@ import {
     fixInvoiceProviderAdapter,
     getPoolShares,
     readPoolInfo,
+    replaceDepositAndRedeemPermissions,
     setPoolUnderwriter,
     whitelistOnPermissions,
     type PoolInfo,
@@ -50,9 +51,17 @@ describe.skipIf(!forkUrl)('bulla factoring (e2e)', () => {
         // Make account0 the pool underwriter (impersonate pool owner)
         await setPoolUnderwriter(anvil.rpcUrl, POOL, poolInfo.owner, account0.address as `0x${string}`);
 
-        // Whitelist account0 on deposit, redeem, and factoring permissions
-        await whitelistOnPermissions(anvil.rpcUrl, poolInfo.depositPermissions, account0.address as `0x${string}`);
-        await whitelistOnPermissions(anvil.rpcUrl, poolInfo.redeemPermissions, account0.address as `0x${string}`);
+        // The pool's deposit/redeem permissions are now ComplianceDepositPermissions (KYC-gated, no allow()).
+        // Swap in a fresh plain allow-list for both on the fork, then whitelist account0 on it.
+        const depositRedeemPermissions = await replaceDepositAndRedeemPermissions(
+            anvil.rpcUrl,
+            POOL,
+            poolInfo.owner,
+            account0.privateKey as `0x${string}`,
+        );
+
+        // Whitelist account0 on deposit/redeem and factoring permissions
+        await whitelistOnPermissions(anvil.rpcUrl, depositRedeemPermissions, account0.address as `0x${string}`);
         await whitelistOnPermissions(anvil.rpcUrl, poolInfo.factoringPermissions, account0.address as `0x${string}`);
 
         // Deal asset tokens to both accounts
