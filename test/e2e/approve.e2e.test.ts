@@ -21,6 +21,16 @@ async function getOwnerOf(rpcUrl: string, claimId: bigint): Promise<string> {
     });
 }
 
+/**
+ * Wait until a transaction is mined and check it succeeded. The CLI returns as soon as the node accepts
+ * the transaction, and on a forked anvil it can still be mining when the next read runs.
+ */
+async function expectMinedSuccessfully(rpcUrl: string, hash: `0x${string}`): Promise<void> {
+    const client = createPublicClient({ transport: http(rpcUrl) });
+    const receipt = await client.waitForTransactionReceipt({ hash });
+    expect(receipt.status).toBe('success');
+}
+
 describe('bulla approve build (e2e)', () => {
     it('approve create-claim build outputs valid JSON transaction', () => {
         const result = runCli([
@@ -172,7 +182,7 @@ describe('invoice: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
         });
 
-        it('transfers the invoice NFT from account0 to account1', () => {
+        it('transfers the invoice NFT from account0 to account1', async () => {
             const result = runCliExecute([
                 'invoice',
                 'transfer-nft',
@@ -192,6 +202,7 @@ describe('invoice: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             ]);
 
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            await expectMinedSuccessfully(anvil.rpcUrl, result.txHash as `0x${string}`);
         });
 
         it('verifies the NFT owner has changed to account1', async () => {
@@ -304,7 +315,7 @@ describe('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
         });
 
-        it('transfers the loan NFT from account0 to account1', () => {
+        it('transfers the loan NFT from account0 to account1', async () => {
             const result = runCliExecute([
                 'frendlend',
                 'transfer-nft',
@@ -324,6 +335,7 @@ describe('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             ]);
 
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            await expectMinedSuccessfully(anvil.rpcUrl, result.txHash as `0x${string}`);
         });
 
         it('verifies the NFT owner has changed to account1', async () => {
