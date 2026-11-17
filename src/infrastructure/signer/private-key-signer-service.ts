@@ -1,9 +1,9 @@
 import { Effect, Layer } from 'effect';
-import { createWalletClient, http } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import * as chains from 'viem/chains';
 import { SignerService } from '../../application/ports/signer-port.js';
-import { SignerRequiredError } from '../../domain/errors.js';
+import { SignerRequiredError, TransactionFailedError } from '../../domain/errors.js';
 import type { ChainId, EthAddress, Hex } from '../../domain/types/eth.js';
 
 const chainMap: Record<ChainId, chains.Chain> = {
@@ -19,6 +19,10 @@ const chainMap: Record<ChainId, chains.Chain> = {
     43114: chains.avalanche,
     11155111: chains.sepolia,
 };
+
+/** How long to wait for a sent transaction to be mined before giving up. */
+const RECEIPT_TIMEOUT_MS = 180_000;
+const RECEIPT_POLLING_INTERVAL_MS = 1_000;
 
 export const makePrivateKeySignerService = (privateKey: Hex, rpcUrl?: string) =>
     Layer.succeed(SignerService, {
@@ -57,5 +61,25 @@ export const makePrivateKeySignerService = (privateKey: Hex, rpcUrl?: string) =>
                 });
 
                 return hash as Hex;
+            }),
+
+        waitForReceipt: (chainId: ChainId, txHash: Hex) =>
+            Effect.gen(function* () {
+                const client = createPublicClient({
+                    chain: chainMap[chainId],
+                    transport: http(rpcUrl),
+                    pollingInterval: RECEIPT_POLLING_INTERVAL_MS,
+                });
+
+                const receipt = yield* Effect.tryPromise({
+                    try: () => client.waitForTransactionReceipt({ hash: txHash, timeout: RECEIPT_TIMEOUT_MS }),
+                    catch: err =>
+                        new TransactionFailedError({
+                            txHash,
+                            message: `Transaction ${txHash} was sent but its receipt could not be fetched: ${err}`,
+                        }),
+                });
+
+                return { status: receipt.status, blockNumber: receipt.blockNumber };
             }),
     });
