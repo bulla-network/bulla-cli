@@ -1,3 +1,10 @@
+## [0.0.14](https://github.com/bulla-network/bulla-cli/compare/v0.0.13...v0.0.14) (2026-11-17)
+
+
+### Features
+
+* remove `bulla factoring approve-invoice` (DEV-2844) ([#21](https://github.com/bulla-network/bulla-cli/issues/21)) ([d0e57a9](https://github.com/bulla-network/bulla-cli/commit/d0e57a9ba691978049d7913d454b3a6db714e52d))
+
 ## [0.0.13](https://github.com/bulla-network/bulla-cli/compare/v0.0.12...v0.0.13) (2026-11-17)
 
 
