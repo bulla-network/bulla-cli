@@ -27,6 +27,7 @@ const factoringPoolAbi = parseAbi([
     'function setUnderwriter(address) nonpayable',
     'function setDepositPermissions(address) nonpayable',
     'function setRedeemPermissions(address) nonpayable',
+    'function approveInvoice(uint256 invoiceId, uint16 targetYieldBps, uint16 spreadBps, uint16 upfrontBps, uint256 initialInvoiceValueOverride) nonpayable',
 ]);
 
 /** ABI for reading BullaInvoice's _bullaClaim getter (inherited from BullaClaimControllerBase). */
@@ -107,6 +108,30 @@ export async function setPoolUnderwriter(
         });
         await waitForSuccess(pub(rpcUrl), hash, 'pool.setUnderwriter');
     });
+}
+
+/**
+ * Approve an invoice for factoring as the pool underwriter (direct contract call).
+ * The CLI no longer exposes this underwriter-only call; in production the backend
+ * underwriter approves invoices after `bulla factoring underwrite`.
+ */
+export async function approveInvoiceAsUnderwriter(
+    rpcUrl: string,
+    underwriterPrivateKey: `0x${string}`,
+    poolAddress: `0x${string}`,
+    invoiceId: bigint,
+    params: { targetYieldBps: number; spreadBps: number; upfrontBps: number; initialInvoiceValueOverride?: bigint },
+) {
+    const account = privateKeyToAccount(underwriterPrivateKey);
+    const wallet = createWalletClient({ account, chain: sepolia, transport: http(rpcUrl) });
+    const hash = await wallet.writeContract({
+        address: poolAddress,
+        abi: factoringPoolAbi,
+        functionName: 'approveInvoice',
+        args: [invoiceId, params.targetYieldBps, params.spreadBps, params.upfrontBps, params.initialInvoiceValueOverride ?? 0n],
+    });
+    const receipt = await pub(rpcUrl).waitForTransactionReceipt({ hash });
+    if (receipt.status !== 'success') throw new Error(`approveInvoice reverted: ${hash}`);
 }
 
 /** Whitelist an address on a Permissions contract by impersonating its owner. */

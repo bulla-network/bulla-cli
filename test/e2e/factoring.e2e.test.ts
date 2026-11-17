@@ -3,6 +3,7 @@ import { runCliExecute } from './helpers/cli-runner.js';
 import { approveCreateClaim } from './helpers/erc20-setup.js';
 import {
     approveERC20,
+    approveInvoiceAsUnderwriter,
     approveNFTForPool,
     dealERC20,
     fixInvoiceProviderAdapter,
@@ -154,30 +155,12 @@ describe.skipIf(!forkUrl)('bulla factoring (e2e)', () => {
             expect(claimId).toBeGreaterThan(0n);
         });
 
-        it('approves the invoice for factoring', () => {
-            const result = runCliExecute([
-                'factoring',
-                'approve-invoice',
-                'execute',
-                '--chain',
-                String(SEPOLIA_CHAIN_ID),
-                '--pool-address',
-                POOL,
-                '--invoice-id',
-                String(claimId),
-                '--target-yield-bps',
-                '800',
-                '--spread-bps',
-                '100',
-                '--upfront-bps',
-                '100',
-                '--private-key',
-                account0.privateKey,
-                '--rpc-url',
-                anvil.rpcUrl,
-            ]);
-
-            expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+        it('approves the invoice for factoring (underwriter, direct contract call)', async () => {
+            await approveInvoiceAsUnderwriter(anvil.rpcUrl, account0.privateKey as `0x${string}`, POOL, claimId, {
+                targetYieldBps: 800,
+                spreadBps: 100,
+                upfrontBps: 100,
+            });
         });
 
         it('funds the invoice from the pool', async () => {

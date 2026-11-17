@@ -5,7 +5,6 @@ import { FactoringEncoderService } from '../../../src/application/ports/factorin
 import { FactoringReaderService } from '../../../src/application/ports/factoring-reader-port.js';
 import { RegistryService } from '../../../src/application/ports/registry-port.js';
 import {
-    buildApproveInvoice,
     buildCancelQueuedRedemption,
     buildDeposit,
     buildFundInvoice,
@@ -16,7 +15,6 @@ import {
 } from '../../../src/application/services/factoring-service.js';
 import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import type {
-    ApproveInvoiceParams,
     CancelQueuedRedemptionParams,
     DepositParams,
     FundInvoiceParams,
@@ -59,17 +57,6 @@ const makeWithdrawParams = (overrides: Partial<WithdrawParams> = {}): WithdrawPa
     assets: 1000n,
     receiver: RECEIVER,
     owner: OWNER,
-    ...overrides,
-});
-
-const makeApproveInvoiceParams = (overrides: Partial<ApproveInvoiceParams> = {}): ApproveInvoiceParams => ({
-    chainId: 11155111 as ChainId,
-    poolAddress: SEPOLIA_POOL,
-    invoiceId: 42n,
-    targetYieldBps: 800,
-    spreadBps: 100,
-    upfrontBps: 50,
-    initialInvoiceValueOverride: 0n,
     ...overrides,
 });
 
@@ -141,14 +128,6 @@ const TestFactoringEncoder = Layer.succeed(FactoringEncoderService, {
                 abi: bullaFactoringV2_1Abi,
                 functionName: 'withdraw',
                 args: [params.assets, params.receiver, params.owner],
-            }) as Hex,
-        ),
-    encodeApproveInvoice: params =>
-        Effect.succeed(
-            encodeFunctionData({
-                abi: bullaFactoringV2_1Abi,
-                functionName: 'approveInvoice',
-                args: [params.invoiceId, params.targetYieldBps, params.spreadBps, params.upfrontBps, params.initialInvoiceValueOverride],
             }) as Hex,
         ),
     encodeFundInvoice: params =>
@@ -281,32 +260,6 @@ describe('buildWithdraw', () => {
         const result = await Effect.runPromise(buildWithdraw(params).pipe(Effect.provide(BuildTestLayers)));
 
         expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
-        expect(result.data.length).toBeGreaterThan(10);
-    });
-});
-
-describe('buildApproveInvoice', () => {
-    it('produces an unsigned transaction targeting the pool address', async () => {
-        const params = makeApproveInvoiceParams();
-        const result = await Effect.runPromise(buildApproveInvoice(params).pipe(Effect.provide(BuildTestLayers)));
-
-        expect(result.to).toBe(SEPOLIA_POOL);
-        expect(result.operation).toBe(0);
-    });
-
-    it('sets value to "0"', async () => {
-        const params = makeApproveInvoiceParams();
-        const result = await Effect.runPromise(buildApproveInvoice(params).pipe(Effect.provide(BuildTestLayers)));
-
-        expect(result.value).toBe('0');
-    });
-
-    it('encodes calldata with all approval parameters', async () => {
-        const params = makeApproveInvoiceParams();
-        const result = await Effect.runPromise(buildApproveInvoice(params).pipe(Effect.provide(BuildTestLayers)));
-
-        expect(result.data).toMatch(/^0x[0-9a-f]{8}/);
-        // approveInvoice has 6 params → selector + multiple words
         expect(result.data.length).toBeGreaterThan(10);
     });
 });

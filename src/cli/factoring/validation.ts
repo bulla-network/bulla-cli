@@ -1,7 +1,6 @@
 import { Either, Option } from 'effect';
 import type { InvalidAddressError, InvalidAmountError, InvalidChainError } from '../../domain/errors.js';
 import type {
-    ApproveInvoiceParams,
     CancelQueuedRedemptionParams,
     DepositParams,
     FundInvoiceParams,
@@ -60,27 +59,6 @@ export const validateWithdrawParams = (
             assets: yield* validateAmount(assets),
             receiver: yield* validateAddress(receiver),
             owner: yield* validateAddress(owner),
-        };
-    });
-
-export const validateApproveInvoiceParams = (
-    chain: Option.Option<number>,
-    poolAddress: string,
-    invoiceId: string,
-    targetYieldBps: number,
-    spreadBps: number,
-    upfrontBps: number,
-    initialInvoiceValueOverride: string,
-): Either.Either<ApproveInvoiceParams, ValidationError> =>
-    Either.gen(function* () {
-        return {
-            chainId: yield* validateChainId(chain),
-            poolAddress: yield* validateAddress(poolAddress),
-            invoiceId: BigInt(invoiceId),
-            targetYieldBps,
-            spreadBps,
-            upfrontBps,
-            initialInvoiceValueOverride: BigInt(initialInvoiceValueOverride),
         };
     });
 

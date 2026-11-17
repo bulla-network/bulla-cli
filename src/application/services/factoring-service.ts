@@ -1,7 +1,6 @@
 import { Effect } from 'effect';
 import type { ContractNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
 import type {
-    ApproveInvoiceParams,
     CancelQueuedRedemptionParams,
     DepositParams,
     FundInvoiceParams,
@@ -50,19 +49,6 @@ export const buildWithdraw = (
 
         yield* registry.validateFactoringPool(params.chainId, params.poolAddress);
         const data = yield* encoder.encodeWithdraw(params);
-
-        return { to: params.poolAddress, value: '0', data, operation: 0 as const };
-    });
-
-export const buildApproveInvoice = (
-    params: ApproveInvoiceParams,
-): Effect.Effect<UnsignedTransaction, ContractNotFoundError | UnsupportedChainError, RegistryService | FactoringEncoderService> =>
-    Effect.gen(function* () {
-        const registry = yield* RegistryService;
-        const encoder = yield* FactoringEncoderService;
-
-        yield* registry.validateFactoringPool(params.chainId, params.poolAddress);
-        const data = yield* encoder.encodeApproveInvoice(params);
 
         return { to: params.poolAddress, value: '0', data, operation: 0 as const };
     });

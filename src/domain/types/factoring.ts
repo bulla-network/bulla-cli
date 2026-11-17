@@ -23,16 +23,6 @@ export interface WithdrawParams {
     owner: EthAddress;
 }
 
-export interface ApproveInvoiceParams {
-    chainId: ChainId;
-    poolAddress: EthAddress;
-    invoiceId: bigint;
-    targetYieldBps: number;
-    spreadBps: number;
-    upfrontBps: number;
-    initialInvoiceValueOverride: bigint;
-}
-
 export interface FundInvoiceParams {
     chainId: ChainId;
     poolAddress: EthAddress;
