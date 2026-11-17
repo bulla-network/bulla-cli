@@ -14,10 +14,22 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
+      # semantic-release pushes the CHANGELOG.md / package.json version commit straight to main, so it needs a
+      # token that is on the bypass list of the org "Protected branches" ruleset and the repo "Required checks"
+      # ruleset. That's the releasebot-bulla app (same as bulla-contracts-V2); its token is scoped to this repo.
+      - name: Mint a releasebot-bulla token
+        id: releasebot
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_APP_PRIVATE_KEY }}
+          owner: bulla-network
+          repositories: bulla-cli
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ steps.releasebot.outputs.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -45,5 +57,5 @@ jobs:
 
       - name: Semantic Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ steps.releasebot.outputs.token }}
         run: npx semantic-release
