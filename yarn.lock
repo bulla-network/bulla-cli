@@ -140,7 +140,7 @@ __metadata:
     viem: "npm:^2.23.0"
     vitest: "npm:^3.0.0"
   bin:
-    bulla: ./dist/index.js
+    bulla: dist/index.js
   languageName: unknown
   linkType: soft
 
