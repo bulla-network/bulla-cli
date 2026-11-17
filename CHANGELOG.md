@@ -1,3 +1,10 @@
+## [0.0.16](https://github.com/bulla-network/bulla-cli/compare/v0.0.15...v0.0.16) (2026-11-17)
+
+
+### Bug Fixes
+
+* keep the bulla command when npm 11 publishes the package ([#27](https://github.com/bulla-network/bulla-cli/issues/27)) ([417fd2e](https://github.com/bulla-network/bulla-cli/commit/417fd2e124d3fb031dd10e5d19e77f31766247f0))
+
 ## [0.0.15](https://github.com/bulla-network/bulla-cli/compare/v0.0.14...v0.0.15) (2026-11-17)
 
 
