@@ -3,7 +3,6 @@ import { encodeFunctionData } from 'viem';
 import { FactoringEncoderService } from '../../application/ports/factoring-encoder-port.js';
 import type { Hex } from '../../domain/types/eth.js';
 import type {
-    ApproveInvoiceParams,
     DepositParams,
     FundInvoiceParams,
     PoolOfferLoanParams,
@@ -38,15 +37,6 @@ const encodeWithdraw = (params: Omit<WithdrawParams, 'chainId' | 'poolAddress'>)
             abi: bullaFactoringV2_1Abi,
             functionName: 'withdraw',
             args: [params.assets, params.receiver, params.owner],
-        }),
-    );
-
-const encodeApproveInvoice = (params: Omit<ApproveInvoiceParams, 'chainId' | 'poolAddress'>): Effect.Effect<Hex, never, never> =>
-    Effect.sync(() =>
-        encodeFunctionData({
-            abi: bullaFactoringV2_1Abi,
-            functionName: 'approveInvoice',
-            args: [params.invoiceId, params.targetYieldBps, params.spreadBps, params.upfrontBps, params.initialInvoiceValueOverride],
         }),
     );
 
@@ -98,7 +88,6 @@ export const ViemFactoringEncoderLive = Layer.succeed(FactoringEncoderService, {
     encodeDeposit,
     encodeRedeem,
     encodeWithdraw,
-    encodeApproveInvoice,
     encodeFundInvoice,
     encodeUnfactorInvoice,
     encodeOfferLoan,

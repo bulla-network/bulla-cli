@@ -30,11 +30,6 @@ export const spreadBpsOption = Options.integer('spread-bps').pipe(Options.withDe
 
 export const upfrontBpsOption = Options.integer('upfront-bps').pipe(Options.withDescription('Upfront fee in basis points'));
 
-export const invoiceValueOverrideOption = Options.text('invoice-value-override').pipe(
-    Options.withDefault('0'),
-    Options.withDescription('Initial invoice value override (0 = use actual value)'),
-);
-
 export const invoiceIndexOption = Options.text('index').pipe(Options.withDescription('Index into the active invoices array (uint256)'));
 
 export const principalAmountOption = Options.text('principal-amount').pipe(Options.withDescription('Loan principal amount in token wei'));

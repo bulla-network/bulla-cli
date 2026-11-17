@@ -1,7 +1,6 @@
 import { Either } from 'effect';
 import { describe, expect, it } from 'vitest';
 import {
-    validateApproveInvoiceParams,
     validateCancelQueuedRedemptionParams,
     validateDepositParams,
     validateFundInvoiceParams,
@@ -84,36 +83,6 @@ describe('validateWithdrawParams', () => {
 
     it('rejects invalid amount', () => {
         const result = validateWithdrawParams(VALID_CHAIN, VALID_POOL, 'abc', VALID_ADDRESS, VALID_ADDRESS);
-        expect(Either.isLeft(result)).toBe(true);
-    });
-});
-
-describe('validateApproveInvoiceParams', () => {
-    it('accepts valid params', () => {
-        const result = validateApproveInvoiceParams(VALID_CHAIN, VALID_POOL, '42', 800, 100, 50, '0');
-
-        expect(Either.isRight(result)).toBe(true);
-        if (Either.isRight(result)) {
-            expect(result.right.invoiceId).toBe(42n);
-            expect(result.right.targetYieldBps).toBe(800);
-            expect(result.right.spreadBps).toBe(100);
-            expect(result.right.upfrontBps).toBe(50);
-            expect(result.right.initialInvoiceValueOverride).toBe(0n);
-        }
-    });
-
-    it('supports large uint256 invoice IDs', () => {
-        const largeId = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
-        const result = validateApproveInvoiceParams(VALID_CHAIN, VALID_POOL, largeId, 800, 100, 50, '0');
-
-        expect(Either.isRight(result)).toBe(true);
-        if (Either.isRight(result)) {
-            expect(result.right.invoiceId).toBe(BigInt(largeId));
-        }
-    });
-
-    it('rejects invalid chain ID', () => {
-        const result = validateApproveInvoiceParams(999, VALID_POOL, '42', 800, 100, 50, '0');
         expect(Either.isLeft(result)).toBe(true);
     });
 });

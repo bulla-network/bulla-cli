@@ -1,7 +1,6 @@
 import { Command } from '@effect/cli';
 import { Console, Effect, Option } from 'effect';
 import {
-    buildApproveInvoice,
     buildCancelQueuedRedemption,
     buildDeposit,
     buildFundInvoice,
@@ -21,7 +20,6 @@ import {
     factorerUpfrontBpsOption,
     factoringInvoiceIdOption,
     factoringReceiverOption,
-    invoiceValueOverrideOption,
     periodsPerYearOption,
     poolAddressOption,
     poolTermLengthOption,
@@ -35,7 +33,6 @@ import {
 import { debtorOption, descriptionOption } from '../options/invoice-options.js';
 import { privateKeyOption } from '../options/pay-options.js';
 import {
-    validateApproveInvoiceParams,
     validateCancelQueuedRedemptionParams,
     validateDepositParams,
     validateFundInvoiceParams,
@@ -182,75 +179,6 @@ const withdrawExecuteCommand = Command.make(
 const withdrawCommand = Command.make('withdraw', {}).pipe(
     Command.withDescription('Withdraw assets from a factoring pool'),
     Command.withSubcommands([withdrawBuildCommand, withdrawExecuteCommand]),
-);
-
-// ============================================================================
-// APPROVE INVOICE
-// ============================================================================
-
-const approveInvoiceBuildCommand = Command.make(
-    'build',
-    {
-        chain: chainOption,
-        poolAddress: poolAddressOption,
-        invoiceId: factoringInvoiceIdOption,
-        targetYieldBps: targetYieldBpsOption,
-        spreadBps: spreadBpsOption,
-        upfrontBps: upfrontBpsOption,
-        invoiceValueOverride: invoiceValueOverrideOption,
-        format: formatOption,
-    },
-    ({ chain, poolAddress, invoiceId, targetYieldBps, spreadBps, upfrontBps, invoiceValueOverride, format }) =>
-        Effect.gen(function* () {
-            const params = yield* validateApproveInvoiceParams(
-                chain,
-                poolAddress,
-                invoiceId,
-                targetYieldBps,
-                spreadBps,
-                upfrontBps,
-                invoiceValueOverride,
-            );
-            const tx = yield* buildApproveInvoice(params);
-            yield* Console.log(formatTransaction(tx, params.chainId, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Build an unsigned approveInvoice transaction'));
-
-const approveInvoiceExecuteCommand = Command.make(
-    'execute',
-    {
-        chain: chainOption,
-        poolAddress: poolAddressOption,
-        invoiceId: factoringInvoiceIdOption,
-        targetYieldBps: targetYieldBpsOption,
-        spreadBps: spreadBpsOption,
-        upfrontBps: upfrontBpsOption,
-        invoiceValueOverride: invoiceValueOverrideOption,
-        privateKey: privateKeyOption,
-        rpcUrl: rpcUrlOption,
-        format: formatOption,
-    },
-    ({ chain, poolAddress, invoiceId, targetYieldBps, spreadBps, upfrontBps, invoiceValueOverride, privateKey, rpcUrl, format }) =>
-        Effect.gen(function* () {
-            const params = yield* validateApproveInvoiceParams(
-                chain,
-                poolAddress,
-                invoiceId,
-                targetYieldBps,
-                spreadBps,
-                upfrontBps,
-                invoiceValueOverride,
-            );
-            const tx = yield* buildApproveInvoice(params);
-            const signerLayer = makeSignerLayer(privateKey as Hex, Option.getOrUndefined(rpcUrl));
-            const result = yield* sendTransaction(params.chainId, tx).pipe(Effect.provide(signerLayer));
-            yield* Console.log(formatResult(result, format as OutputFormat));
-        }),
-).pipe(Command.withDescription('Sign and send an approveInvoice transaction'));
-
-const approveInvoiceCommand = Command.make('approve-invoice', {}).pipe(
-    Command.withDescription('Approve an invoice for factoring (underwriter)'),
-    Command.withSubcommands([approveInvoiceBuildCommand, approveInvoiceExecuteCommand]),
 );
 
 // ============================================================================
@@ -488,7 +416,6 @@ export const factoringCommands = [
     depositCommand,
     redeemCommand,
     withdrawCommand,
-    approveInvoiceCommand,
     fundInvoiceCommand,
     unfactorInvoiceCommand,
     offerLoanCommand,
