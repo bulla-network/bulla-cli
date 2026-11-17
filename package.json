@@ -6,10 +6,10 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/bulla-network/bulla-cli.git"
+        "url": "git+https://github.com/bulla-network/bulla-cli.git"
     },
     "bin": {
-        "bulla": "./dist/index.js"
+        "bulla": "dist/index.js"
     },
     "files": [
         "dist"
