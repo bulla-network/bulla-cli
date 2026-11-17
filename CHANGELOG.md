@@ -1,3 +1,10 @@
+## [0.0.13](https://github.com/bulla-network/bulla-cli/compare/v0.0.12...v0.0.13) (2026-11-17)
+
+
+### Bug Fixes
+
+* wait for the receipt and fail on reverted transactions (DEV-2984) ([#22](https://github.com/bulla-network/bulla-cli/issues/22)) ([fa7a795](https://github.com/bulla-network/bulla-cli/commit/fa7a795633a8065691e9ba8b3a095649d8a2404a))
+
 ## [0.0.12](https://github.com/bulla-network/bulla-cli/compare/v0.0.11...v0.0.12) (2026-04-09)
 
 
