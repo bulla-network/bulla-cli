@@ -1,3 +1,10 @@
+## [0.0.15](https://github.com/bulla-network/bulla-cli/compare/v0.0.14...v0.0.15) (2026-11-17)
+
+
+### Bug Fixes
+
+* publish to npm from Node 24 so trusted publishing works ([#26](https://github.com/bulla-network/bulla-cli/issues/26)) ([82759ff](https://github.com/bulla-network/bulla-cli/commit/82759ffe31f88876a9dfbad19c09aea74d8582a3)), closes [#21](https://github.com/bulla-network/bulla-cli/issues/21)
+
 ## [0.0.14](https://github.com/bulla-network/bulla-cli/compare/v0.0.13...v0.0.14) (2026-11-17)
 
 
