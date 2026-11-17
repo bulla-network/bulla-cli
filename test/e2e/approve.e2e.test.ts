@@ -1,6 +1,6 @@
 import { createPublicClient, http, parseAbi } from 'viem';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runCli, runCliExecute } from './helpers/cli-runner.js';
+import { runCli, runCliAsync, runCliExecute } from './helpers/cli-runner.js';
 import { approveCreateClaim, WETH_ADDRESS, wrapEthAndApprove } from './helpers/erc20-setup.js';
 import { getNewTokenIdFromReceipt, getOfferIdFromReceipt } from './helpers/receipt-parser.js';
 import { type AnvilInstance, startAnvil } from './setup/anvil.js';
@@ -202,6 +202,7 @@ describe('invoice: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             ]);
 
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            expect(result.blockNumber).toBeGreaterThan(0);
             await expectMinedSuccessfully(anvil.rpcUrl, result.txHash as `0x${string}`);
         });
 
@@ -335,6 +336,7 @@ describe('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             ]);
 
             expect(result.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+            expect(result.blockNumber).toBeGreaterThan(0);
             await expectMinedSuccessfully(anvil.rpcUrl, result.txHash as `0x${string}`);
         });
 
@@ -342,5 +344,149 @@ describe('frendlend: approve-nft -> transfer-nft lifecycle (e2e)', () => {
             const owner = await getOwnerOf(anvil.rpcUrl, claimId);
             expect(owner.toLowerCase()).toBe(ANVIL_ACCOUNTS.account1.address.toLowerCase());
         });
+    });
+});
+
+/** Anvil's third default account. Like account0/1, Sepolia may have code at it, so the test clears it. */
+const ACCOUNT2 = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
+
+async function rpc<T>(rpcUrl: string, method: string, params: unknown[] = []): Promise<T> {
+    const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 }),
+    });
+    const body = (await response.json()) as { result?: T; error?: { message: string } };
+    if (body.error) throw new Error(`${method} failed: ${body.error.message}`);
+    return body.result as T;
+}
+
+async function waitForPendingTransactions(rpcUrl: string, count: number, timeoutMs = 60_000): Promise<void> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+        const status = await rpc<{ pending: string }>(rpcUrl, 'txpool_status');
+        if (Number(status.pending) >= count) return;
+        await new Promise(r => setTimeout(r, 200));
+    }
+    throw new Error(`Fewer than ${count} pending transactions after ${timeoutMs}ms`);
+}
+
+describe('execute: a transaction that reverts when mined (e2e)', () => {
+    let anvil: AnvilInstance;
+    let claimId: bigint;
+
+    beforeAll(async () => {
+        anvil = await startAnvil(SEPOLIA_RPC_URL);
+        await rpc(anvil.rpcUrl, 'anvil_setCode', [ACCOUNT2, '0x']);
+        await approveCreateClaim(anvil.rpcUrl, ANVIL_ACCOUNTS.account0.privateKey as `0x${string}`, CONTRACTS.bullaInvoice);
+
+        const created = runCliExecute([
+            'invoice',
+            'create',
+            'execute',
+            '--chain',
+            String(SEPOLIA_CHAIN_ID),
+            '--debtor',
+            ANVIL_ACCOUNTS.account1.address,
+            '--creditor',
+            ANVIL_ACCOUNTS.account0.address,
+            '--amount',
+            '1000000000000000000',
+            '--token',
+            WETH_ADDRESS,
+            '--description',
+            'reverted transfer e2e test',
+            '--private-key',
+            ANVIL_ACCOUNTS.account0.privateKey,
+            '--rpc-url',
+            anvil.rpcUrl,
+        ]);
+        claimId = await getNewTokenIdFromReceipt(anvil.rpcUrl, created.txHash as `0x${string}`);
+
+        runCliExecute([
+            'invoice',
+            'approve-nft',
+            'execute',
+            '--chain',
+            String(SEPOLIA_CHAIN_ID),
+            '--to',
+            ANVIL_ACCOUNTS.account1.address,
+            '--claim-id',
+            String(claimId),
+            '--private-key',
+            ANVIL_ACCOUNTS.account0.privateKey,
+            '--rpc-url',
+            anvil.rpcUrl,
+        ]);
+    });
+
+    afterAll(() => {
+        anvil?.stop();
+    });
+
+    it('exits non-zero and names the tx hash when the sent transfer-nft reverts on-chain', async () => {
+        // Hold transactions in the pool so the CLI's transfer passes gas estimation and is sent,
+        // then gets front-run by account0 moving the NFT to account2. Mined after that, it reverts.
+        await rpc(anvil.rpcUrl, 'evm_setAutomine', [false]);
+
+        const transfer = runCliAsync([
+            'invoice',
+            'transfer-nft',
+            'execute',
+            '--chain',
+            String(SEPOLIA_CHAIN_ID),
+            '--from',
+            ANVIL_ACCOUNTS.account0.address,
+            '--to',
+            ANVIL_ACCOUNTS.account1.address,
+            '--claim-id',
+            String(claimId),
+            '--private-key',
+            ANVIL_ACCOUNTS.account1.privateKey,
+            '--rpc-url',
+            anvil.rpcUrl,
+            '--format',
+            'json',
+        ]);
+        await waitForPendingTransactions(anvil.rpcUrl, 1);
+
+        const frontRun = runCli([
+            'invoice',
+            'transfer-nft',
+            'build',
+            '--chain',
+            String(SEPOLIA_CHAIN_ID),
+            '--from',
+            ANVIL_ACCOUNTS.account0.address,
+            '--to',
+            ACCOUNT2,
+            '--claim-id',
+            String(claimId),
+            '--format',
+            'json',
+        ]);
+        expect(frontRun.exitCode).toBe(0);
+        const frontRunTx = JSON.parse(frontRun.stdout) as { to: string; data: string };
+        // Anvil's default accounts are unlocked, and the pool orders by tip, so this one is mined first.
+        await rpc(anvil.rpcUrl, 'eth_sendTransaction', [
+            {
+                from: ANVIL_ACCOUNTS.account0.address,
+                to: frontRunTx.to,
+                data: frontRunTx.data,
+                gas: '0x7a120',
+                maxFeePerGas: '0x174876e800', // 100 gwei
+                maxPriorityFeePerGas: '0x174876e800',
+            },
+        ]);
+        await waitForPendingTransactions(anvil.rpcUrl, 2);
+        await rpc(anvil.rpcUrl, 'evm_mine');
+        await rpc(anvil.rpcUrl, 'evm_setAutomine', [true]);
+
+        const result = await transfer;
+
+        expect(result.exitCode).not.toBe(0);
+        expect(result.stdout).not.toContain('"txHash"');
+        expect(result.stderr).toMatch(/Transaction 0x[0-9a-f]{64} reverted in block \d+/);
+        expect((await getOwnerOf(anvil.rpcUrl, claimId)).toLowerCase()).toBe(ACCOUNT2.toLowerCase());
     });
 });

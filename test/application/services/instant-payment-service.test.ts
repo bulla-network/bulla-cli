@@ -1,4 +1,4 @@
-import { Effect, Layer } from 'effect';
+import { Cause, Effect, Exit, Layer, Option } from 'effect';
 import { encodeFunctionData } from 'viem';
 import { describe, expect, it } from 'vitest';
 import { InstantPaymentEncoderService } from '../../../src/application/ports/instant-payment-encoder-port.js';
@@ -6,7 +6,7 @@ import { RegistryService } from '../../../src/application/ports/registry-port.js
 import { SignerService } from '../../../src/application/ports/signer-port.js';
 import { buildInstantPayment } from '../../../src/application/services/instant-payment-service.js';
 import { sendTransaction } from '../../../src/application/services/transaction-utils.js';
-import { SignerRequiredError } from '../../../src/domain/errors.js';
+import { SignerRequiredError, TransactionFailedError } from '../../../src/domain/errors.js';
 import type { ChainId, EthAddress, Hex } from '../../../src/domain/types/eth.js';
 import type { InstantPaymentParams } from '../../../src/domain/types/instant-payment.js';
 import { ZERO_ADDRESS } from '../../../src/domain/types/token.js';
@@ -52,15 +52,35 @@ const TestInstantPaymentEncoder = Layer.succeed(InstantPaymentEncoderService, {
         ),
 });
 
-const TestSignerService = Layer.succeed(SignerService, {
-    getAddress: () => Effect.succeed('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as EthAddress),
-    signAndSend: () => Effect.succeed('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as Hex),
-});
+const TX_HASH = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as Hex;
+
+const makeTestSignerService = (receipt: SignerService['waitForReceipt']) =>
+    Layer.succeed(SignerService, {
+        getAddress: () => Effect.succeed('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as EthAddress),
+        signAndSend: () => Effect.succeed(TX_HASH),
+        waitForReceipt: receipt,
+    });
+
+const TestSignerService = makeTestSignerService(() => Effect.succeed({ status: 'success', blockNumber: 42n }));
+
+/** The node accepted the transaction, but it reverted when mined. */
+const RevertingSignerService = makeTestSignerService(() => Effect.succeed({ status: 'reverted', blockNumber: 43n }));
+
+/** The node accepted the transaction, but no receipt ever arrived. */
+const NoReceiptSignerService = makeTestSignerService((_chainId, txHash) =>
+    Effect.fail(new TransactionFailedError({ txHash, message: `Transaction ${txHash} was sent but its receipt could not be fetched` })),
+);
 
 const FailingSignerService = Layer.succeed(SignerService, {
     getAddress: () => Effect.fail(new SignerRequiredError({ message: 'No signer configured' })),
     signAndSend: () => Effect.fail(new SignerRequiredError({ message: 'No signer configured' })),
+    waitForReceipt: () => Effect.die('waitForReceipt must not be called when sending failed'),
 });
+
+const failureOf = <A, E>(exit: Exit.Exit<A, E>): E => {
+    if (!Exit.isFailure(exit)) throw new Error('expected the effect to fail');
+    return Option.getOrThrow(Cause.failureOption(exit.cause));
+};
 
 const BuildTestLayers = Layer.mergeAll(TestRegistryService, TestInstantPaymentEncoder);
 
@@ -120,8 +140,37 @@ describe('sendTransaction', () => {
         const tx = await Effect.runPromise(buildInstantPayment(params).pipe(Effect.provide(BuildTestLayers)));
         const result = await Effect.runPromise(sendTransaction(params.chainId, tx).pipe(Effect.provide(TestSignerService)));
 
-        expect(result.txHash).toBe('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
+        expect(result.txHash).toBe(TX_HASH);
         expect(result.chainId).toBe(11155111);
+    });
+
+    it('returns the block the transaction was mined in', async () => {
+        const params = makeTestParams();
+        const tx = await Effect.runPromise(buildInstantPayment(params).pipe(Effect.provide(BuildTestLayers)));
+        const result = await Effect.runPromise(sendTransaction(params.chainId, tx).pipe(Effect.provide(TestSignerService)));
+
+        expect(result.blockNumber).toBe(42);
+    });
+
+    it('fails with TransactionFailedError when the mined transaction reverted', async () => {
+        const params = makeTestParams();
+        const tx = await Effect.runPromise(buildInstantPayment(params).pipe(Effect.provide(BuildTestLayers)));
+        const exit = await Effect.runPromiseExit(sendTransaction(params.chainId, tx).pipe(Effect.provide(RevertingSignerService)));
+
+        const error = failureOf(exit);
+        expect(error).toBeInstanceOf(TransactionFailedError);
+        expect((error as TransactionFailedError).txHash).toBe(TX_HASH);
+        expect(error.message).toBe(`Transaction ${TX_HASH} reverted in block 43`);
+    });
+
+    it('fails with TransactionFailedError when no receipt arrives', async () => {
+        const params = makeTestParams();
+        const tx = await Effect.runPromise(buildInstantPayment(params).pipe(Effect.provide(BuildTestLayers)));
+        const exit = await Effect.runPromiseExit(sendTransaction(params.chainId, tx).pipe(Effect.provide(NoReceiptSignerService)));
+
+        const error = failureOf(exit);
+        expect(error).toBeInstanceOf(TransactionFailedError);
+        expect(error.message).toContain(TX_HASH);
     });
 
     it('fails with SignerRequiredError when signer rejects', async () => {

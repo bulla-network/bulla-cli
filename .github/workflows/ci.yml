@@ -34,8 +34,12 @@ jobs:
             - name: Verify CLI runs
               run: node dist/index.js --version
 
+            # Pinned so a new Foundry release can't change anvil under the e2e suite without a code change.
+            # To upgrade, bump both the action SHA and `version`, and check the e2e suite passes.
             - name: Install Foundry
-              uses: foundry-rs/foundry-toolchain@v1
+              uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
+              with:
+                  version: v1.9.0
 
             - name: Run e2e tests
               run: yarn test:e2e
