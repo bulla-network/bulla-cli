@@ -115,6 +115,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@bulla/cli@workspace:."
   dependencies:
+    "@bulla/registry": "npm:^1.0.2"
     "@effect/cli": "npm:^0.73.2"
     "@effect/cluster": "npm:^0.56.4"
     "@effect/experimental": "npm:^0.58.0"
@@ -143,6 +144,13 @@ __metadata:
     bulla: dist/index.js
   languageName: unknown
   linkType: soft
+
+"@bulla/registry@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "@bulla/registry@npm:1.0.2"
+  checksum: 082e2542c7cd7ed508a82b94d1a6d4103eed4fa7ec174c4be8dbdc2d71ada534f7f10b24a4edc3dcc1587c7e23e8ce4675a5313fd773ba52e75a2c1cffe60c01
+  languageName: node
+  linkType: hard
 
 "@colors/colors@npm:1.5.0":
   version: 1.5.0

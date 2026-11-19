@@ -26,10 +26,10 @@
         "test:coverage": "vitest run --coverage",
         "test:e2e": "vitest run --config vitest.config.e2e.ts",
         "format": "prettier --write 'src/**/*.ts'",
-        "format:check": "prettier --check 'src/**/*.ts'",
-        "sync-registry": "tsx scripts/sync-registry.ts"
+        "format:check": "prettier --check 'src/**/*.ts'"
     },
     "dependencies": {
+        "@bulla/registry": "^1.0.2",
         "@effect/cli": "^0.73.2",
         "@effect/cluster": "^0.56.4",
         "@effect/experimental": "^0.58.0",

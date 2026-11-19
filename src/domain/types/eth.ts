@@ -1,3 +1,4 @@
+import { registry } from '@bulla/registry';
 import { Brand } from 'effect';
 
 // -- EthAddress: a 0x-prefixed 42-character hex string
@@ -19,17 +20,7 @@ export type ChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
 export const isChainId = (n: number): n is ChainId => (SUPPORTED_CHAIN_IDS as readonly number[]).includes(n);
 
-// -- Chain name mapping for display
-export const CHAIN_NAMES: Record<ChainId, string> = {
-    1: 'Ethereum Mainnet',
-    10: 'Optimism',
-    56: 'BNB Chain',
-    100: 'Gnosis Chain',
-    137: 'Polygon',
-    151: 'RedBelly',
-    8453: 'Base',
-    42161: 'Arbitrum',
-    42220: 'Celo',
-    43114: 'Avalanche',
-    11155111: 'Sepolia',
-};
+// -- Chain names for display, from @bulla/registry
+export const CHAIN_NAMES = Object.fromEntries(
+    SUPPORTED_CHAIN_IDS.map(id => [id, registry.networks[String(id)]?.name ?? `Chain ${id}`]),
+) as Record<ChainId, string>;

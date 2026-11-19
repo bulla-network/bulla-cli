@@ -1,138 +1,57 @@
+import { registry } from '@bulla/registry';
 import { Effect, Layer } from 'effect';
 import { RegistryService } from '../../application/ports/registry-port.js';
 import { ContractNotFoundError, UnsupportedChainError } from '../../domain/errors.js';
 import type { ChainId, EthAddress } from '../../domain/types/eth.js';
 import { isChainId } from '../../domain/types/eth.js';
-import { FACTORING_POOLS, REGISTRY } from '../../generated/registry.js';
+
+/** The registry.json groups the CLI reads contracts from, keyed by source repo. */
+type ContractGroup = 'bulla-contracts' | 'bulla-contracts-v2';
+
+const unsupportedChain = (chainId: number) =>
+    new UnsupportedChainError({
+        chainId,
+        message: `Chain ${chainId} is not supported`,
+    });
+
+/** Look up a contract address in @bulla/registry for a chain the CLI supports. */
+const contractAddress = (
+    chainId: ChainId,
+    group: ContractGroup,
+    key: string,
+    contractName: string,
+): Effect.Effect<EthAddress, ContractNotFoundError | UnsupportedChainError> => {
+    if (!isChainId(chainId)) return Effect.fail(unsupportedChain(chainId));
+
+    const address = registry.networks[String(chainId)]?.contracts[group]?.[key];
+    if (!address) {
+        return Effect.fail(
+            new ContractNotFoundError({
+                chainId,
+                contractName,
+                message: `No ${contractName} contract found for chain ${chainId}`,
+            }),
+        );
+    }
+
+    return Effect.succeed(address as EthAddress);
+};
 
 export const StaticRegistryServiceLive = Layer.succeed(RegistryService, {
-    getInstantPaymentAddress: (chainId: ChainId) => {
-        if (!isChainId(chainId)) {
-            return Effect.fail(
-                new UnsupportedChainError({
-                    chainId,
-                    message: `Chain ${chainId} is not supported`,
-                }),
-            );
-        }
-
-        const chain = REGISTRY[chainId];
-        if (!chain) {
-            return Effect.fail(
-                new ContractNotFoundError({
-                    chainId,
-                    contractName: 'BullaInstantPayment',
-                    message: `No BullaInstantPayment contract found for chain ${chainId}`,
-                }),
-            );
-        }
-
-        return Effect.succeed(chain.bullaInstantPayment);
-    },
-    getInvoiceAddress: (chainId: ChainId) => {
-        if (!isChainId(chainId)) {
-            return Effect.fail(
-                new UnsupportedChainError({
-                    chainId,
-                    message: `Chain ${chainId} is not supported`,
-                }),
-            );
-        }
-
-        const address = REGISTRY[chainId]?.bullaInvoice;
-        if (!address) {
-            return Effect.fail(
-                new ContractNotFoundError({
-                    chainId,
-                    contractName: 'BullaInvoice',
-                    message: `No BullaInvoice contract found for chain ${chainId}`,
-                }),
-            );
-        }
-
-        return Effect.succeed(address);
-    },
-    getFrendLendAddress: (chainId: ChainId) => {
-        if (!isChainId(chainId)) {
-            return Effect.fail(
-                new UnsupportedChainError({
-                    chainId,
-                    message: `Chain ${chainId} is not supported`,
-                }),
-            );
-        }
-
-        const address = REGISTRY[chainId]?.frendLendV2;
-        if (!address) {
-            return Effect.fail(
-                new ContractNotFoundError({
-                    chainId,
-                    contractName: 'BullaFrendLendV2',
-                    message: `No BullaFrendLendV2 contract found for chain ${chainId}`,
-                }),
-            );
-        }
-
-        return Effect.succeed(address);
-    },
-    getApprovalRegistryAddress: (chainId: ChainId) => {
-        if (!isChainId(chainId)) {
-            return Effect.fail(
-                new UnsupportedChainError({
-                    chainId,
-                    message: `Chain ${chainId} is not supported`,
-                }),
-            );
-        }
-
-        const address = REGISTRY[chainId]?.bullaApprovalRegistry;
-        if (!address) {
-            return Effect.fail(
-                new ContractNotFoundError({
-                    chainId,
-                    contractName: 'BullaApprovalRegistry',
-                    message: `No BullaApprovalRegistry contract found for chain ${chainId}`,
-                }),
-            );
-        }
-
-        return Effect.succeed(address);
-    },
-    getClaimAddress: (chainId: ChainId) => {
-        if (!isChainId(chainId)) {
-            return Effect.fail(
-                new UnsupportedChainError({
-                    chainId,
-                    message: `Chain ${chainId} is not supported`,
-                }),
-            );
-        }
-
-        const address = REGISTRY[chainId]?.bullaClaimV2;
-        if (!address) {
-            return Effect.fail(
-                new ContractNotFoundError({
-                    chainId,
-                    contractName: 'BullaClaimV2',
-                    message: `No BullaClaimV2 contract found for chain ${chainId}`,
-                }),
-            );
-        }
-
-        return Effect.succeed(address);
-    },
+    getInstantPaymentAddress: chainId => contractAddress(chainId, 'bulla-contracts', 'bullaInstantPayment', 'BullaInstantPayment'),
+    getInvoiceAddress: chainId => contractAddress(chainId, 'bulla-contracts-v2', 'bullaInvoice', 'BullaInvoice'),
+    getFrendLendAddress: chainId => contractAddress(chainId, 'bulla-contracts-v2', 'frendLendV2', 'BullaFrendLendV2'),
+    getApprovalRegistryAddress: chainId => contractAddress(chainId, 'bulla-contracts-v2', 'bullaApprovalRegistry', 'BullaApprovalRegistry'),
+    getClaimAddress: chainId => contractAddress(chainId, 'bulla-contracts-v2', 'bullaClaimV2', 'BullaClaimV2'),
+    /**
+     * Accepts any pool @bulla/registry lists on the chain, archived ones included: an archived pool
+     * still resolves, and its depositors may still need to redeem from it.
+     */
     validateFactoringPool: (chainId: ChainId, address: EthAddress) => {
-        if (!isChainId(chainId)) {
-            return Effect.fail(
-                new UnsupportedChainError({
-                    chainId,
-                    message: `Chain ${chainId} is not supported`,
-                }),
-            );
-        }
+        if (!isChainId(chainId)) return Effect.fail(unsupportedChain(chainId));
 
-        const pools = FACTORING_POOLS[chainId];
-        if (!pools || !pools.some(p => p.address.toLowerCase() === address.toLowerCase())) {
+        const known = registry.pools.some(p => p.chainId === chainId && p.address.toLowerCase() === address.toLowerCase());
+        if (!known) {
             return Effect.fail(
                 new ContractNotFoundError({
                     chainId,
