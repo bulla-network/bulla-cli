@@ -1,3 +1,10 @@
+## [0.0.17](https://github.com/bulla-network/bulla-cli/compare/v0.0.16...v0.0.17) (2026-11-19)
+
+
+### Features
+
+* take contract addresses and factoring pools from @bulla/registry ([#29](https://github.com/bulla-network/bulla-cli/issues/29)) ([0da198c](https://github.com/bulla-network/bulla-cli/commit/0da198cacfba34669a4056a8169a5ce63949b94f))
+
 ## [0.0.16](https://github.com/bulla-network/bulla-cli/compare/v0.0.15...v0.0.16) (2026-11-17)
 
 
