@@ -1,0 +1,159 @@
+name: Registry bump
+run-name: Registry bump to @bulla/registry ${{ inputs.version }}
+
+# bulla-registry starts this after each @bulla/registry release (bulla-registry-notify), passing the
+# version it just published. It moves @bulla/registry to that version on main, runs the checks, and
+# pushes a `fix(deps)` commit as releasebot-bulla. That push starts release.yml, and semantic-release
+# publishes a @bulla/cli patch with the new registry version in its dependencies.
+#
+# releasebot-bulla is on the bypass list of the branch rulesets, so the required checks don't run
+# before the push: the checks below are the only gate. A version that fails them leaves main as it was.
+#
+# Starting it again with the same version (a re-run, a duplicate dispatch) makes no commit, and so does
+# a version older than the one main already uses. A new major version stops with an error: a breaking
+# registry change needs a person.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The @bulla/registry version just published (for example 1.0.4)
+        required: true
+        type: string
+
+# The push uses the releasebot token, not GITHUB_TOKEN.
+permissions:
+  contents: read
+
+# One bump at a time, never cancelled, so two quick registry releases bump in order. If several wait,
+# GitHub keeps only the newest pending run; that one moves to the newest version anyway.
+concurrency:
+  group: registry-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: bump @bulla/registry
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Check the version input
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::version must be a semver version like 1.0.4, not \"$VERSION\""
+            exit 1
+          fi
+
+      # Same app and scope as release.yml: its token can push to main past the rulesets.
+      - name: Mint a releasebot-bulla token
+        id: releasebot
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RELEASEBOT_APP_ID }}
+          private-key: ${{ secrets.RELEASEBOT_APP_PRIVATE_KEY }}
+          owner: bulla-network
+          repositories: bulla-cli
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ steps.releasebot.outputs.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          check-latest: true
+
+      - name: Enable Corepack (Yarn 4)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # The registry starts this right after publishing; give the npm registry a few minutes to serve it.
+      - name: Wait for the version on npm
+        run: |
+          for attempt in $(seq 1 30); do
+            if [ "$(npm view "@bulla/registry@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then exit 0; fi
+            echo "@bulla/registry@$VERSION isn't on npm yet (attempt $attempt/30)"
+            sleep 10
+          done
+          echo "::error::@bulla/registry@$VERSION isn't on npm after 5 minutes"
+          exit 1
+
+      # Compares with the version the lockfile installs: the same or older stops here with success.
+      - id: compare
+        name: Compare with the installed version
+        run: |
+          current=$(node -p 'require("./node_modules/@bulla/registry/package.json").version')
+          echo "main uses @bulla/registry $current"
+          if [ "${VERSION%%.*}" != "${current%%.*}" ]; then
+            echo "::error::$VERSION is a different major version from $current; bump it by hand"
+            exit 1
+          fi
+          newest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n1)
+          if [ "$current" = "$VERSION" ] || [ "$newest" = "$current" ]; then
+            echo "::notice::main already uses @bulla/registry $current; nothing to bump"
+            echo "bump=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "bump=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: up
+        name: Bump @bulla/registry
+        if: steps.compare.outputs.bump == 'true'
+        run: |
+          yarn up "@bulla/registry@^$VERSION"
+          if git diff --quiet -- package.json yarn.lock; then
+            echo "::notice::package.json and yarn.lock didn't change; nothing to commit"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git diff -- package.json
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The same checks as release.yml and ci.yml, e2e included.
+      - name: Type check
+        if: steps.up.outputs.changed == 'true'
+        run: yarn typecheck
+
+      - name: Run tests
+        if: steps.up.outputs.changed == 'true'
+        run: yarn test
+
+      - name: Build
+        if: steps.up.outputs.changed == 'true'
+        run: yarn build
+
+      - name: Verify CLI runs
+        if: steps.up.outputs.changed == 'true'
+        run: node dist/index.js --version
+
+      # Same pinned Foundry as ci.yml.
+      - name: Install Foundry
+        if: steps.up.outputs.changed == 'true'
+        uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
+        with:
+          version: v1.9.0
+
+      - name: Run e2e tests
+        if: steps.up.outputs.changed == 'true'
+        run: yarn test:e2e
+        env:
+          SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
+
+      # No [skip ci]: the push has to start release.yml. `fix` is a patch release. If main moved while
+      # the checks ran, the push is refused and the run fails; start it again to bump the new main.
+      - name: Commit and push to main
+        if: steps.up.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.releasebot.outputs.token }}
+          APP_SLUG: ${{ steps.releasebot.outputs.app-slug }}
+        run: |
+          user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git add package.json yarn.lock
+          git commit -m "fix(deps): @bulla/registry $VERSION"
+          git push origin HEAD:main
