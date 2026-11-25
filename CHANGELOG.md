@@ -1,10 +1,3 @@
-## [0.0.19](https://github.com/bulla-network/bulla-cli/compare/v0.0.18...v0.0.19) (2026-11-25)
-
-
-### Bug Fixes
-
-* **deps:** @bulla/registry 1.2.0 ([6127043](https://github.com/bulla-network/bulla-cli/commit/6127043ace6a95cb181037ac252aaaaf4642ef77))
-
 ## [0.0.18](https://github.com/bulla-network/bulla-cli/compare/v0.0.17...v0.0.18) (2026-11-25)
 
 
