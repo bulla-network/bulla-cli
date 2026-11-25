@@ -29,7 +29,7 @@
         "format:check": "prettier --check 'src/**/*.ts'"
     },
     "dependencies": {
-        "@bulla/registry": "^1.1.2",
+        "@bulla/registry": "^1.2.0",
         "@effect/cli": "^0.73.2",
         "@effect/cluster": "^0.56.4",
         "@effect/experimental": "^0.58.0",

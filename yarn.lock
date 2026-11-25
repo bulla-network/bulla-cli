@@ -115,7 +115,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@bulla/cli@workspace:."
   dependencies:
-    "@bulla/registry": "npm:^1.1.2"
+    "@bulla/registry": "npm:^1.2.0"
     "@effect/cli": "npm:^0.73.2"
     "@effect/cluster": "npm:^0.56.4"
     "@effect/experimental": "npm:^0.58.0"
@@ -145,10 +145,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@bulla/registry@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "@bulla/registry@npm:1.1.2"
-  checksum: e4d3e2b1b0fec27d8a6910e2146d65c982d0ecf174d8efe9f48d4aa081467371c4dd29942cfc03305e61eb9f89b8a496be5a33d3597466d7c9bbfc1847eef055
+"@bulla/registry@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@bulla/registry@npm:1.2.0"
+  checksum: 14de828ce482d23808979a64b0e7189786be15b7c35bfda49d0588d0c1e952b2ab5e62765cfec00139167130907ee2dd9cbce62678cb87e641bb4ff4278df063
   languageName: node
   linkType: hard
 
